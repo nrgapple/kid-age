@@ -1,0 +1,27 @@
+{
+  "short_name": "Kid Age",
+  "name": "Time Through Their Eyes",
+  "description": "See how time feels through your child's eyes. Compare everyday moments to what they'd feel like for a 30-year-old.",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#6C63FF",
+  "background_color": "#f8f9ff"
+}
