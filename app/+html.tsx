@@ -6,6 +6,8 @@ import type { PropsWithChildren } from 'react';
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
 export default function Root({ children }: PropsWithChildren) {
+  const basePath = process.env.EXPO_PUBLIC_BASE_URL || '';
+
   return (
     <html lang="en">
       <head>
@@ -24,15 +26,15 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-title" content="Kid Age" />
 
         {/* PWA icons */}
-        <link rel="apple-touch-icon" href="/logo192.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/logo192.png" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/logo512.png" />
+        <link rel="apple-touch-icon" href={`${basePath}/logo192.png`} />
+        <link rel="icon" type="image/png" sizes="192x192" href={`${basePath}/logo192.png`} />
+        <link rel="icon" type="image/png" sizes="512x512" href={`${basePath}/logo512.png`} />
 
         {/* Link the PWA manifest file */}
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href={`${basePath}/manifest.json`} />
 
         {/* Bootstrap the service worker */}
-        <script dangerouslySetInnerHTML={{ __html: sw }} />
+        <script dangerouslySetInnerHTML={{ __html: swScript(basePath) }} />
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer
@@ -46,10 +48,11 @@ export default function Root({ children }: PropsWithChildren) {
   );
 }
 
-const sw = `
+function swScript(basePath: string) {
+  return `
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
+    navigator.serviceWorker.register('${basePath}/sw.js').then(registration => {
       console.log('Service Worker registered with scope:', registration.scope);
     }).catch(error => {
       console.error('Service Worker registration failed:', error);
@@ -57,3 +60,4 @@ if ('serviceWorker' in navigator) {
   });
 }
 `;
+}
