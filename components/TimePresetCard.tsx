@@ -12,6 +12,7 @@ type TimePresetCardProps = {
   durationMinutes: number;
   kidAgeMinutes: number;
   kidColor: string;
+  adultAge?: number;
 };
 
 export default function TimePresetCard({
@@ -20,12 +21,13 @@ export default function TimePresetCard({
   durationMinutes,
   kidAgeMinutes,
   kidColor,
+  adultAge,
 }: TimePresetCardProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
   const percent = getPercentOfLife(durationMinutes, kidAgeMinutes);
-  const adultEquiv = getAdultEquivalent(durationMinutes, kidAgeMinutes);
+  const adultEquiv = getAdultEquivalent(durationMinutes, kidAgeMinutes, adultAge);
   const percentDisplay = formatPercent(percent);
 
   return (
@@ -39,7 +41,7 @@ export default function TimePresetCard({
         <Text style={[styles.ofLife, { color: colors.secondaryText }]}> of their life</Text>
       </View>
       <PercentBar percent={percent} color={kidColor} />
-      <AdultComparison equivalentRaw={adultEquiv.raw} />
+      <AdultComparison equivalentRaw={adultEquiv.raw} adultAge={adultAge} />
     </View>
   );
 }

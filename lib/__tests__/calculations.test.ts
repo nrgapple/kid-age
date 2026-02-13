@@ -73,6 +73,38 @@ describe('calculations', () => {
       expect(result.value).toBe(2);
       expect(result.unit).toBe('hours');
     });
+
+    it('uses default adult age of 30 when not specified', () => {
+      // Same as the explicit 30 test - should give same result
+      const result = getAdultEquivalent(120, 525600);
+      expect(result.value).toBe(2.5);
+      expect(result.unit).toBe('days');
+    });
+
+    it('scales correctly with a custom adult age of 40', () => {
+      // For a 1-year-old, a 2-hour plane ride (120 min)
+      // kidAge = 525600 min (1 year)
+      // adult equivalent = (120 / 525600) * (40 * 525600) = 120 * 40 = 4800 min = 80 hours ≈ 3.3 days
+      const result = getAdultEquivalent(120, 525600, 40);
+      expect(result.value).toBe(3.3);
+      expect(result.unit).toBe('days');
+    });
+
+    it('scales correctly with a smaller adult age of 20', () => {
+      // For a 1-year-old, a 2-hour plane ride (120 min)
+      // adult equivalent = (120 / 525600) * (20 * 525600) = 120 * 20 = 2400 min = 40 hours ≈ 1.7 days
+      const result = getAdultEquivalent(120, 525600, 20);
+      expect(result.value).toBe(1.7);
+      expect(result.unit).toBe('days');
+    });
+
+    it('returns same duration when kid age equals adult age', () => {
+      // If kid is 40 and adult reference is 40, equivalent = same duration
+      const fortyYearsInMinutes = 40 * 525600;
+      const result = getAdultEquivalent(120, fortyYearsInMinutes, 40);
+      expect(result.value).toBe(2);
+      expect(result.unit).toBe('hours');
+    });
   });
 
   describe('formatDuration', () => {

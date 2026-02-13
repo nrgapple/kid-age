@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Kid } from './types';
+import { Kid, Settings, DEFAULT_SETTINGS } from './types';
 
 const STORAGE_KEY = '@kid_age_kids';
+const SETTINGS_KEY = '@kid_age_settings';
 
 export async function getKids(): Promise<Kid[]> {
   try {
@@ -39,6 +40,29 @@ export async function deleteKid(id: string): Promise<void> {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
   } catch (error) {
     console.error('Failed to delete kid:', error);
+    throw error;
+  }
+}
+
+export async function getSettings(): Promise<Settings> {
+  try {
+    const json = await AsyncStorage.getItem(SETTINGS_KEY);
+    if (json) {
+      const parsed = JSON.parse(json);
+      return { ...DEFAULT_SETTINGS, ...parsed };
+    }
+    return { ...DEFAULT_SETTINGS };
+  } catch (error) {
+    console.error('Failed to load settings:', error);
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+export async function saveSettings(settings: Settings): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (error) {
+    console.error('Failed to save settings:', error);
     throw error;
   }
 }

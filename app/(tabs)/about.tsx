@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { StyleSheet, ScrollView, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
+import { getSettings } from '@/lib/storage';
+import { DEFAULT_SETTINGS } from '@/lib/types';
 
 export default function AboutScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const [adultAge, setAdultAge] = useState(DEFAULT_SETTINGS.adultAge);
+
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        const settings = await getSettings();
+        setAdultAge(settings.adultAge);
+      })();
+    }, [])
+  );
 
   return (
     <ScrollView
@@ -25,8 +38,8 @@ export default function AboutScreen() {
         </Text>
         <Text style={[styles.body, { color: colors.secondaryText, marginTop: 12 }]}>
           Think about it: when you were 5, a single summer felt like an eternity. That's because
-          3 months was about 5% of your entire life. For a 30-year-old, that same summer is only
-          about 0.8%.
+          3 months was about 5% of your entire life. For a {adultAge}-year-old, that same summer is only
+          about {Math.round((3 / (adultAge * 12)) * 1000) / 10}%.
         </Text>
       </View>
 
@@ -36,7 +49,7 @@ export default function AboutScreen() {
           1. Add your child with their birth date{'\n\n'}
           2. See preset events (plane rides, school days, vacations) and what percentage of your
           child's life each one represents{'\n\n'}
-          3. Compare: see how long that event would "feel" to an average 30-year-old adult{'\n\n'}
+          3. Compare: see how long that event would "feel" to a {adultAge}-year-old adult{'\n\n'}
           4. Enter custom durations to explore on your own
         </Text>
       </View>

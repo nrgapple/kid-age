@@ -18,9 +18,10 @@ const UNIT_TO_MINUTES: Record<Unit, number> = {
 type CustomDurationInputProps = {
   kidAgeMinutes: number;
   kidColor: string;
+  adultAge?: number;
 };
 
-export default function CustomDurationInput({ kidAgeMinutes, kidColor }: CustomDurationInputProps) {
+export default function CustomDurationInput({ kidAgeMinutes, kidColor, adultAge }: CustomDurationInputProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [value, setValue] = useState('');
@@ -31,7 +32,7 @@ export default function CustomDurationInput({ kidAgeMinutes, kidColor }: CustomD
   const hasInput = numericValue > 0;
 
   const percent = hasInput ? getPercentOfLife(totalMinutes, kidAgeMinutes) : 0;
-  const adultEquiv = hasInput ? getAdultEquivalent(totalMinutes, kidAgeMinutes) : null;
+  const adultEquiv = hasInput ? getAdultEquivalent(totalMinutes, kidAgeMinutes, adultAge) : null;
 
   const units: Unit[] = ['minutes', 'hours', 'days', 'weeks'];
 
@@ -90,7 +91,7 @@ export default function CustomDurationInput({ kidAgeMinutes, kidColor }: CustomD
             <Text style={[styles.ofLife, { color: colors.secondaryText }]}> of their life</Text>
           </View>
           <PercentBar percent={percent} color={kidColor} />
-          {adultEquiv && <AdultComparison equivalentRaw={adultEquiv.raw} />}
+          {adultEquiv && <AdultComparison equivalentRaw={adultEquiv.raw} adultAge={adultAge} />}
         </View>
       )}
     </View>

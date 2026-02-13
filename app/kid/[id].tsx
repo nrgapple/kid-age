@@ -10,8 +10,8 @@ import {
 import { useLocalSearchParams, useNavigation, useRouter, useFocusEffect } from 'expo-router';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
-import { Kid } from '@/lib/types';
-import { getKids, deleteKid } from '@/lib/storage';
+import { Kid, DEFAULT_SETTINGS } from '@/lib/types';
+import { getKids, deleteKid, getSettings } from '@/lib/storage';
 import { confirmAction } from '@/lib/confirm';
 import { formatAge, getAgeInMinutes } from '@/lib/calculations';
 import { PRESETS } from '@/lib/presets';
@@ -26,13 +26,15 @@ export default function KidDetailScreen() {
   const colors = Colors[colorScheme];
   const [kid, setKid] = useState<Kid | null>(null);
   const [loading, setLoading] = useState(true);
+  const [adultAge, setAdultAge] = useState(DEFAULT_SETTINGS.adultAge);
 
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const kids = await getKids();
+        const [kids, settings] = await Promise.all([getKids(), getSettings()]);
         const found = kids.find((k) => k.id === id);
         setKid(found ?? null);
+        setAdultAge(settings.adultAge);
         if (found) {
           navigation.setOptions({ title: found.name });
         }
@@ -94,7 +96,7 @@ export default function KidDetailScreen() {
         How Time Feels
       </Text>
       <Text style={[styles.sectionSubtitle, { color: colors.secondaryText }]}>
-        Each event as a percentage of {kid.name}'s life, compared to a 30-year-old
+        Each event as a percentage of {kid.name}'s life, compared to a {adultAge}-year-old
       </Text>
 
       {PRESETS.map((preset) => (
@@ -105,6 +107,7 @@ export default function KidDetailScreen() {
           durationMinutes={preset.minutes}
           kidAgeMinutes={ageMinutes}
           kidColor={kid.color}
+          adultAge={adultAge}
         />
       ))}
 
@@ -115,6 +118,7 @@ export default function KidDetailScreen() {
       <CustomDurationInput
         kidAgeMinutes={ageMinutes}
         kidColor={kid.color}
+        adultAge={adultAge}
       />
 
       {/* Delete button */}

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getKids, saveKid, deleteKid } from '../storage';
-import { Kid } from '../types';
+import { getKids, saveKid, deleteKid, getSettings, saveSettings } from '../storage';
+import { Kid, Settings, DEFAULT_SETTINGS } from '../types';
 
 // AsyncStorage mock is provided automatically by jest-expo / @react-native-async-storage mock
 
@@ -172,6 +172,72 @@ describe('storage', () => {
 
       kids = await getKids();
       expect(kids).toHaveLength(0);
+    });
+  });
+
+  describe('getSettings', () => {
+    it('returns default settings when nothing is stored', async () => {
+      const settings = await getSettings();
+      expect(settings).toEqual(DEFAULT_SETTINGS);
+      expect(settings.adultAge).toBe(30);
+    });
+
+    it('returns stored settings', async () => {
+      await AsyncStorage.setItem(
+        '@kid_age_settings',
+        JSON.stringify({ adultAge: 40 })
+      );
+
+      const settings = await getSettings();
+      expect(settings.adultAge).toBe(40);
+    });
+
+    it('merges partial stored settings with defaults', async () => {
+      // If stored settings are missing a field, defaults should fill in
+      await AsyncStorage.setItem(
+        '@kid_age_settings',
+        JSON.stringify({})
+      );
+
+      const settings = await getSettings();
+      expect(settings.adultAge).toBe(DEFAULT_SETTINGS.adultAge);
+    });
+
+    it('returns default settings on corrupt data (does not crash)', async () => {
+      await AsyncStorage.setItem('@kid_age_settings', 'not-json!!!');
+
+      const settings = await getSettings();
+      expect(settings).toEqual(DEFAULT_SETTINGS);
+    });
+  });
+
+  describe('saveSettings', () => {
+    it('saves settings and retrieves them', async () => {
+      await saveSettings({ adultAge: 45 });
+
+      const settings = await getSettings();
+      expect(settings.adultAge).toBe(45);
+    });
+
+    it('overwrites previous settings', async () => {
+      await saveSettings({ adultAge: 25 });
+      await saveSettings({ adultAge: 50 });
+
+      const settings = await getSettings();
+      expect(settings.adultAge).toBe(50);
+    });
+
+    it('does not affect kids storage', async () => {
+      const kid = makeKid();
+      await saveKid(kid);
+      await saveSettings({ adultAge: 35 });
+
+      const kids = await getKids();
+      expect(kids).toHaveLength(1);
+      expect(kids[0].name).toBe('Jett');
+
+      const settings = await getSettings();
+      expect(settings.adultAge).toBe(35);
     });
   });
 });
