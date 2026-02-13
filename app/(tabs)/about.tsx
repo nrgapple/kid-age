@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, ScrollView, Text, View } from 'react-native';
+import { StyleSheet, ScrollView, Text, View, Image } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
@@ -25,7 +25,10 @@ export default function AboutScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
     >
-      <Text style={styles.emoji}>⏳</Text>
+      <Image
+        source={require('@/assets/images/icon.png')}
+        style={styles.logo}
+      />
       <Text style={[styles.title, { color: colors.text }]}>
         Time Through Their Eyes
       </Text>
@@ -78,8 +81,10 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     alignItems: 'center',
   },
-  emoji: {
-    fontSize: 56,
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
     marginBottom: 12,
     marginTop: 8,
   },
