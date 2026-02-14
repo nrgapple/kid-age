@@ -6,6 +6,11 @@ import {
   View,
   Pressable,
   ActivityIndicator,
+  FlatList,
+  Modal,
+  Share,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter, useFocusEffect } from 'expo-router';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -14,9 +19,10 @@ import { Kid, DEFAULT_SETTINGS } from '@/lib/types';
 import { getKids, deleteKid, getSettings } from '@/lib/storage';
 import { confirmAction } from '@/lib/confirm';
 import { formatAge, getAgeInMinutes } from '@/lib/calculations';
-import { PRESETS } from '@/lib/presets';
+import { PRESETS, PRESET_CATEGORIES, CATEGORY_LABELS, PresetCategory } from '@/lib/presets';
 import TimePresetCard from '@/components/TimePresetCard';
 import CustomDurationInput from '@/components/CustomDurationInput';
+import { selectionHaptic, mediumHaptic } from '@/lib/haptics';
 
 export default function KidDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,8 +31,11 @@ export default function KidDetailScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [kid, setKid] = useState<Kid | null>(null);
+  const [allKids, setAllKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [adultAge, setAdultAge] = useState(DEFAULT_SETTINGS.adultAge);
+  const [activeCategory, setActiveCategory] = useState<'all' | PresetCategory>('all');
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +43,7 @@ export default function KidDetailScreen() {
         const [kids, settings] = await Promise.all([getKids(), getSettings()]);
         const found = kids.find((k) => k.id === id);
         setKid(found ?? null);
+        setAllKids(kids);
         setAdultAge(settings.adultAge);
         if (found) {
           navigation.setOptions({ title: found.name });
@@ -55,6 +65,31 @@ export default function KidDetailScreen() {
     );
   }, [kid, router]);
 
+  const handleSwitchKid = useCallback(
+    (kidId: string) => {
+      selectionHaptic();
+      router.replace(`/kid/${kidId}`);
+    },
+    [router]
+  );
+
+  const handleShare = useCallback(
+    (label: string, percent: string, adultEquiv: string) => {
+      if (!kid) return;
+      const message = `Did you know? A ${label.toLowerCase()} is ${percent} of ${kid.name}'s life! To a ${adultAge}-year-old, that feels like ${adultEquiv}.\n\n— Time Through Their Eyes`;
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          navigator.share({ text: message }).catch(() => {});
+        } else {
+          navigator.clipboard?.writeText(message);
+        }
+      } else {
+        Share.share({ message });
+      }
+    },
+    [kid, adultAge]
+  );
+
   if (loading) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
@@ -75,81 +110,223 @@ export default function KidDetailScreen() {
   const ageMinutes = getAgeInMinutes(birthDate);
   const ageDisplay = formatAge(birthDate);
 
+  const filteredPresets =
+    activeCategory === 'all'
+      ? PRESETS
+      : PRESETS.filter((p) => p.category === activeCategory);
+
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={[styles.avatar, { backgroundColor: kid.color }]}>
-          <Text style={styles.avatarText}>{kid.name.charAt(0).toUpperCase()}</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Sticky header */}
+      <View style={[styles.stickyHeader, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+        {/* Kid switcher row */}
+        {allKids.length > 1 && (
+          <FlatList
+            data={allKids}
+            horizontal
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.kidSwitcherList}
+            renderItem={({ item }) => {
+              const isActive = item.id === kid.id;
+              return (
+                <Pressable
+                  onPress={() => handleSwitchKid(item.id)}
+                  style={[
+                    styles.kidSwitcherItem,
+                    isActive && styles.kidSwitcherItemActive,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.switcherAvatar,
+                      {
+                        backgroundColor: item.color,
+                        opacity: isActive ? 1 : 0.4,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.switcherAvatarText}>
+                      {item.name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  {isActive && (
+                    <Text
+                      style={[styles.switcherName, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {item.name}
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            }}
+          />
+        )}
+
+        {/* Kid info */}
+        <View style={styles.kidInfo}>
+          <View style={[styles.avatar, { backgroundColor: kid.color }]}>
+            <Text style={styles.avatarText}>{kid.name.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={styles.kidInfoText}>
+            <Text style={[styles.name, { color: colors.text }]}>{kid.name}</Text>
+            <Text style={[styles.age, { color: colors.secondaryText }]}>{ageDisplay}</Text>
+          </View>
         </View>
-        <Text style={[styles.name, { color: colors.text }]}>{kid.name}</Text>
-        <Text style={[styles.age, { color: colors.secondaryText }]}>{ageDisplay}</Text>
       </View>
 
-      {/* Section: Presets */}
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        How Time Feels
-      </Text>
-      <Text style={[styles.sectionSubtitle, { color: colors.secondaryText }]}>
-        Each event as a percentage of {kid.name}'s life, compared to a {adultAge}-year-old
-      </Text>
+      {/* Main content */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Section: Presets */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>How Time Feels</Text>
+        <Text style={[styles.sectionSubtitle, { color: colors.secondaryText }]}>
+          Each event as a share of {kid.name}'s life
+        </Text>
 
-      {PRESETS.map((preset) => (
-        <TimePresetCard
-          key={preset.label}
-          label={preset.label}
-          icon={preset.icon}
-          durationMinutes={preset.minutes}
-          kidAgeMinutes={ageMinutes}
-          kidColor={kid.color}
-          adultAge={adultAge}
-        />
-      ))}
-
-      {/* Section: Custom */}
-      <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 8 }]}>
-        Try Your Own
-      </Text>
-      <CustomDurationInput
-        kidAgeMinutes={ageMinutes}
-        kidColor={kid.color}
-        adultAge={adultAge}
-      />
-
-      {/* Delete button */}
-      <View style={styles.deleteSection}>
-        <Pressable
-          onPress={handleDelete}
-          style={({ pressed }) => [
-            styles.deleteButton,
-            {
-              backgroundColor: colors.dangerLight,
-              borderColor: colors.danger,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
+        {/* Category filter chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipRow}
+          contentContainerStyle={styles.chipRowContent}
         >
-          <Text style={[styles.deleteButtonText, { color: colors.danger }]}>
-            Remove {kid.name}
-          </Text>
+          <Pressable
+            onPress={() => { selectionHaptic(); setActiveCategory('all'); }}
+            style={[
+              styles.chip,
+              {
+                backgroundColor: activeCategory === 'all' ? kid.color : colors.cardBackground,
+                borderColor: activeCategory === 'all' ? kid.color : colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.chipText,
+                { color: activeCategory === 'all' ? '#fff' : colors.secondaryText },
+              ]}
+            >
+              All
+            </Text>
+          </Pressable>
+          {PRESET_CATEGORIES.map((cat) => (
+            <Pressable
+              key={cat}
+              onPress={() => { selectionHaptic(); setActiveCategory(cat); }}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: activeCategory === cat ? kid.color : colors.cardBackground,
+                  borderColor: activeCategory === cat ? kid.color : colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  { color: activeCategory === cat ? '#fff' : colors.secondaryText },
+                ]}
+              >
+                {CATEGORY_LABELS[cat]}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        {filteredPresets.map((preset) => (
+          <TimePresetCard
+            key={preset.label}
+            label={preset.label}
+            icon={preset.icon}
+            durationMinutes={preset.minutes}
+            kidAgeMinutes={ageMinutes}
+            kidColor={kid.color}
+            adultAge={adultAge}
+            onShare={handleShare}
+          />
+        ))}
+
+        {/* Delete button */}
+        <View style={styles.deleteSection}>
+          <Pressable
+            onPress={handleDelete}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              {
+                backgroundColor: colors.dangerLight,
+                borderColor: colors.danger,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <Text style={[styles.deleteButtonText, { color: colors.danger }]}>
+              Remove {kid.name}
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+
+      {/* FAB for custom duration */}
+      <Pressable
+        onPress={() => { mediumHaptic(); setShowCustomModal(true); }}
+        style={({ pressed }) => [
+          styles.fab,
+          {
+            backgroundColor: kid.color,
+            opacity: pressed ? 0.85 : 1,
+            transform: [{ scale: pressed ? 0.95 : 1 }],
+          },
+        ]}
+      >
+        <Text style={styles.fabText}>⏱</Text>
+      </Pressable>
+
+      {/* Custom duration bottom sheet / modal */}
+      <Modal
+        visible={showCustomModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowCustomModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowCustomModal(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalKeyboardView}
+          >
+            <Pressable
+              style={[styles.modalContent, { backgroundColor: colors.cardBackground }]}
+              onPress={(e) => e.stopPropagation?.()}
+            >
+              <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Try Your Own</Text>
+              <Text style={[styles.modalSubtitle, { color: colors.secondaryText }]}>
+                Enter any duration to see how it feels to {kid.name}
+              </Text>
+              <CustomDurationInput
+                kidAgeMinutes={ageMinutes}
+                kidColor={kid.color}
+                adultAge={adultAge}
+                kidName={kid.name}
+              />
+            </Pressable>
+          </KeyboardAvoidingView>
         </Pressable>
-      </View>
-    </ScrollView>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
   },
   centered: {
     flex: 1,
@@ -160,31 +337,82 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  header: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 8,
+
+  // Sticky header
+  stickyHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  kidSwitcherList: {
+    paddingVertical: 6,
+    gap: 8,
+  },
+  kidSwitcherItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  kidSwitcherItemActive: {
+    backgroundColor: 'rgba(108, 99, 255, 0.08)',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  switcherAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
-  avatarText: {
-    fontSize: 32,
+  switcherAvatarText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#fff',
   },
+  switcherName: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+
+  // Kid info
+  kidInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  kidInfoText: {
+    flex: 1,
+  },
   name: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   age: {
-    fontSize: 16,
+    fontSize: 14,
+  },
+
+  // Content
+  content: {
+    padding: 16,
+    paddingBottom: 100,
   },
   sectionTitle: {
     fontSize: 20,
@@ -194,9 +422,29 @@ const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: 12,
     lineHeight: 20,
   },
+
+  // Category chips
+  chipRow: {
+    marginBottom: 14,
+  },
+  chipRowContent: {
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Delete
   deleteSection: {
     marginTop: 32,
     alignItems: 'center',
@@ -211,5 +459,60 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  fabText: {
+    fontSize: 24,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalKeyboardView: {
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    paddingTop: 12,
+    maxHeight: '85%',
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    marginBottom: 16,
+    lineHeight: 20,
   },
 });

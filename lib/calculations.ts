@@ -107,6 +107,28 @@ export function formatAge(birthDate: Date): string {
 }
 
 /**
+ * Get a relatable real-world analogy for a duration in minutes.
+ * Maps durations to common adult experiences to make them tangible.
+ */
+export function getAnalogy(totalMinutes: number): string | null {
+  if (totalMinutes < 5) return null;
+  if (totalMinutes < 30) return "Like waiting for your coffee order";
+  if (totalMinutes < 60) return "Like being stuck in a long meeting";
+  if (totalMinutes < MINUTES_PER_HOUR * 3) return "Like sitting through a movie marathon";
+  if (totalMinutes < MINUTES_PER_DAY) return "Like pulling an all-nighter at work";
+  if (totalMinutes < MINUTES_PER_DAY * 2) return "Like a full work day that never ends";
+  if (totalMinutes < MINUTES_PER_WEEK) return "Like a long weekend road trip";
+  if (totalMinutes < MINUTES_PER_WEEK * 2) return "Like a full work week with overtime";
+  if (totalMinutes < MINUTES_PER_MONTH) return "Like waiting for next month's paycheck";
+  if (totalMinutes < MINUTES_PER_MONTH * 3) return "Like training for a marathon";
+  if (totalMinutes < MINUTES_PER_MONTH * 6) return "Like a semester of college classes";
+  if (totalMinutes < MINUTES_PER_YEAR) return "Like waiting for the holidays all year";
+  if (totalMinutes < MINUTES_PER_YEAR * 2) return "Like the gap between Olympic Games";
+  if (totalMinutes < MINUTES_PER_YEAR * 5) return "Like getting a college degree";
+  return "Like waiting to pay off a mortgage";
+}
+
+/**
  * Format a percentage for display.
  * Uses scientific notation for very small values.
  */

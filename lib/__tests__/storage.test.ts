@@ -16,6 +16,8 @@ const makeKid = (overrides: Partial<Kid> = {}): Kid => ({
 describe('storage', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
+    // Mark as seeded so getKids() doesn't auto-seed example kids
+    await AsyncStorage.setItem('@kid_age_seeded', 'true');
   });
 
   describe('getKids', () => {

@@ -4,6 +4,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import { Kid } from '@/lib/types';
 import { formatAge } from '@/lib/calculations';
+import { lightHaptic } from '@/lib/haptics';
 
 // Only import Swipeable on native (it has spotty web support)
 let Swipeable: any = null;
@@ -51,7 +52,10 @@ export default function KidCard({ kid, onPress, onDelete }: KidCardProps) {
 
   const cardContent = (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        lightHaptic();
+        onPress();
+      }}
       style={({ pressed }) => [
         styles.card,
         {

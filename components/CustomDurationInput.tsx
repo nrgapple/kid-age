@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Share, Platform } from 'react-native';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 import PercentBar from './PercentBar';
@@ -19,9 +19,15 @@ type CustomDurationInputProps = {
   kidAgeMinutes: number;
   kidColor: string;
   adultAge?: number;
+  kidName?: string;
 };
 
-export default function CustomDurationInput({ kidAgeMinutes, kidColor, adultAge }: CustomDurationInputProps) {
+export default function CustomDurationInput({
+  kidAgeMinutes,
+  kidColor,
+  adultAge,
+  kidName,
+}: CustomDurationInputProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const [value, setValue] = useState('');
@@ -36,9 +42,24 @@ export default function CustomDurationInput({ kidAgeMinutes, kidColor, adultAge 
 
   const units: Unit[] = ['minutes', 'hours', 'days', 'weeks'];
 
+  const handleShare = () => {
+    if (!hasInput || !adultEquiv) return;
+    const durationLabel = `${numericValue} ${unit}`;
+    const name = kidName || 'your child';
+    const message = `Did you know? ${durationLabel} is ${formatPercent(percent)} of ${name}'s life! To a ${adultAge || 30}-year-old, that feels like ${adultEquiv.raw}.\n\n— Time Through Their Eyes`;
+    if (Platform.OS === 'web') {
+      if (navigator.share) {
+        navigator.share({ text: message }).catch(() => {});
+      } else {
+        navigator.clipboard?.writeText(message);
+      }
+    } else {
+      Share.share({ message });
+    }
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-      <Text style={[styles.title, { color: colors.text }]}>Custom Duration</Text>
+    <View style={styles.container}>
       <View style={styles.inputRow}>
         <TextInput
           style={[
@@ -89,6 +110,9 @@ export default function CustomDurationInput({ kidAgeMinutes, kidColor, adultAge 
               {formatPercent(percent)}
             </Text>
             <Text style={[styles.ofLife, { color: colors.secondaryText }]}> of their life</Text>
+            <Pressable onPress={handleShare} hitSlop={8} style={styles.shareButton}>
+              <Text style={[styles.shareIcon, { color: colors.secondaryText }]}>↗</Text>
+            </Pressable>
           </View>
           <PercentBar percent={percent} color={kidColor} />
           {adultEquiv && <AdultComparison equivalentRaw={adultEquiv.raw} adultAge={adultAge} />}
@@ -100,20 +124,7 @@ export default function CustomDurationInput({ kidAgeMinutes, kidColor, adultAge 
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
     marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 12,
   },
   inputRow: {
     marginBottom: 10,
@@ -156,5 +167,13 @@ const styles = StyleSheet.create({
   },
   ofLife: {
     fontSize: 14,
+    flex: 1,
+  },
+  shareButton: {
+    padding: 4,
+  },
+  shareIcon: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
