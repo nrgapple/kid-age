@@ -1,10 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import { Kid } from '@/lib/types';
-import { getAgeInMinutes, getAdultEquivalent, formatAge } from '@/lib/calculations';
-import { PRESETS } from '@/lib/presets';
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { formatAge, getAdultEquivalent, getAgeInMinutes } from "@/lib/calculations";
+import { PRESETS } from "@/lib/presets";
+import type { Kid } from "@/lib/types";
 
 type DailyInsightCardProps = {
   kid: Kid;
@@ -26,7 +25,7 @@ function getDailyPresetIndex(kidId: string, presetCount: number): number {
 }
 
 export default function DailyInsightCard({ kid, onPress }: DailyInsightCardProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
 
   const presetIndex = getDailyPresetIndex(kid.id, PRESETS.length);
@@ -41,8 +40,8 @@ export default function DailyInsightCard({ kid, onPress }: DailyInsightCardProps
       style={({ pressed }) => [
         styles.card,
         {
-          backgroundColor: kid.color + '18',
-          borderColor: kid.color + '40',
+          backgroundColor: `${kid.color}18`,
+          borderColor: `${kid.color}40`,
           opacity: pressed ? 0.85 : 1,
           transform: [{ scale: pressed ? 0.98 : 1 }],
         },
@@ -56,14 +55,15 @@ export default function DailyInsightCard({ kid, onPress }: DailyInsightCardProps
           <Text style={[styles.name, { color: colors.text }]}>{kid.name}</Text>
           <Text style={[styles.age, { color: colors.secondaryText }]}>{formatAge(birthDate)}</Text>
         </View>
-        <Text style={styles.presetIcon}>{preset.icon}</Text>
+        <Text style={[styles.presetLabel, { color: colors.secondaryText }]}>{preset.label}</Text>
       </View>
       <Text style={[styles.insight, { color: colors.text }]}>
-        A <Text style={{ fontWeight: '800' }}>{preset.label.toLowerCase()}</Text> feels like{' '}
-        <Text style={[styles.highlight, { color: kid.color }]}>{adultEquiv.raw}</Text> to you
+        Today&apos;s anchor: <Text style={{ fontWeight: "800" }}>{preset.label.toLowerCase()}</Text>{" "}
+        feels like <Text style={[styles.highlight, { color: kid.color }]}>{adultEquiv.raw}</Text> to
+        you
       </Text>
       <Text style={[styles.tapHint, { color: colors.secondaryText }]}>
-        Tap to explore more
+        Open the profile for more comparisons
       </Text>
     </Pressable>
   );
@@ -71,41 +71,44 @@ export default function DailyInsightCard({ kid, onPress }: DailyInsightCardProps
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 16,
+    padding: 18,
     marginBottom: 12,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   avatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 10,
   },
   avatarText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   headerText: {
     flex: 1,
   },
   name: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   age: {
     fontSize: 13,
   },
-  presetIcon: {
-    fontSize: 28,
+  presetLabel: {
+    fontFamily: "SpaceMono",
+    fontSize: 11,
+    textAlign: "right",
+    maxWidth: 92,
   },
   insight: {
     fontSize: 17,
@@ -113,11 +116,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   highlight: {
-    fontWeight: '800',
+    fontWeight: "800",
     fontSize: 18,
   },
   tapHint: {
     fontSize: 13,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });

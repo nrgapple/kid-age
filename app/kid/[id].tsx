@@ -1,40 +1,39 @@
-import React, { useState, useCallback } from 'react';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
-  StyleSheet,
-  ScrollView,
-  Text,
-  View,
-  Pressable,
   ActivityIndicator,
   FlatList,
-  Modal,
-  Share,
-  Platform,
   KeyboardAvoidingView,
-} from 'react-native';
-import { useLocalSearchParams, useNavigation, useRouter, useFocusEffect } from 'expo-router';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import { Kid, DEFAULT_SETTINGS } from '@/lib/types';
-import { getKids, deleteKid, getSettings } from '@/lib/storage';
-import { confirmAction } from '@/lib/confirm';
-import { formatAge, getAgeInMinutes } from '@/lib/calculations';
-import { PRESETS, PRESET_CATEGORIES, CATEGORY_LABELS, PresetCategory } from '@/lib/presets';
-import TimePresetCard from '@/components/TimePresetCard';
-import CustomDurationInput from '@/components/CustomDurationInput';
-import { selectionHaptic, mediumHaptic } from '@/lib/haptics';
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import CustomDurationInput from "@/components/CustomDurationInput";
+import TimePresetCard from "@/components/TimePresetCard";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { formatAge, getAgeInMinutes } from "@/lib/calculations";
+import { mediumHaptic, selectionHaptic } from "@/lib/haptics";
+import { confirmAction, shareMessage } from "@/lib/platform";
+import { CATEGORY_LABELS, PRESET_CATEGORIES, PRESETS, type PresetCategory } from "@/lib/presets";
+import { deleteKid, getKids, getSettings } from "@/lib/storage";
+import { DEFAULT_SETTINGS, type Kid } from "@/lib/types";
 
 export default function KidDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
   const router = useRouter();
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
   const [kid, setKid] = useState<Kid | null>(null);
   const [allKids, setAllKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [adultAge, setAdultAge] = useState(DEFAULT_SETTINGS.adultAge);
-  const [activeCategory, setActiveCategory] = useState<'all' | PresetCategory>('all');
+  const [activeCategory, setActiveCategory] = useState<"all" | PresetCategory>("all");
   const [showCustomModal, setShowCustomModal] = useState(false);
 
   useFocusEffect(
@@ -50,19 +49,21 @@ export default function KidDetailScreen() {
         }
         setLoading(false);
       })();
-    }, [id, navigation])
+    }, [id, navigation]),
   );
 
   const handleDelete = useCallback(() => {
     if (!kid) return;
-    confirmAction(
-      'Remove Child',
-      `Are you sure you want to remove ${kid.name}? This cannot be undone.`,
-      async () => {
+    confirmAction({
+      title: "Remove child",
+      message: `Remove ${kid.name}? This deletes the profile from this device.`,
+      confirmText: "Remove",
+      destructive: true,
+      onConfirm: async () => {
         await deleteKid(kid.id);
         router.back();
-      }
-    );
+      },
+    });
   }, [kid, router]);
 
   const handleSwitchKid = useCallback(
@@ -70,24 +71,16 @@ export default function KidDetailScreen() {
       selectionHaptic();
       router.replace(`/kid/${kidId}`);
     },
-    [router]
+    [router],
   );
 
   const handleShare = useCallback(
     (label: string, percent: string, adultEquiv: string) => {
       if (!kid) return;
       const message = `Did you know? A ${label.toLowerCase()} is ${percent} of ${kid.name}'s life! To a ${adultAge}-year-old, that feels like ${adultEquiv}.\n\n— Time Through Their Eyes`;
-      if (Platform.OS === 'web') {
-        if (navigator.share) {
-          navigator.share({ text: message }).catch(() => {});
-        } else {
-          navigator.clipboard?.writeText(message);
-        }
-      } else {
-        Share.share({ message });
-      }
+      shareMessage(message).catch(() => {});
     },
-    [kid, adultAge]
+    [kid, adultAge],
   );
 
   if (loading) {
@@ -111,14 +104,17 @@ export default function KidDetailScreen() {
   const ageDisplay = formatAge(birthDate);
 
   const filteredPresets =
-    activeCategory === 'all'
-      ? PRESETS
-      : PRESETS.filter((p) => p.category === activeCategory);
+    activeCategory === "all" ? PRESETS : PRESETS.filter((p) => p.category === activeCategory);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Sticky header */}
-      <View style={[styles.stickyHeader, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          styles.stickyHeader,
+          { backgroundColor: colors.cardBackground, borderBottomColor: colors.border },
+        ]}
+      >
         {/* Kid switcher row */}
         {allKids.length > 1 && (
           <FlatList
@@ -132,10 +128,7 @@ export default function KidDetailScreen() {
               return (
                 <Pressable
                   onPress={() => handleSwitchKid(item.id)}
-                  style={[
-                    styles.kidSwitcherItem,
-                    isActive && styles.kidSwitcherItemActive,
-                  ]}
+                  style={[styles.kidSwitcherItem, isActive && styles.kidSwitcherItemActive]}
                 >
                   <View
                     style={[
@@ -151,10 +144,7 @@ export default function KidDetailScreen() {
                     </Text>
                   </View>
                   {isActive && (
-                    <Text
-                      style={[styles.switcherName, { color: colors.text }]}
-                      numberOfLines={1}
-                    >
+                    <Text style={[styles.switcherName, { color: colors.text }]} numberOfLines={1}>
                       {item.name}
                     </Text>
                   )}
@@ -196,19 +186,22 @@ export default function KidDetailScreen() {
           contentContainerStyle={styles.chipRowContent}
         >
           <Pressable
-            onPress={() => { selectionHaptic(); setActiveCategory('all'); }}
+            onPress={() => {
+              selectionHaptic();
+              setActiveCategory("all");
+            }}
             style={[
               styles.chip,
               {
-                backgroundColor: activeCategory === 'all' ? kid.color : colors.cardBackground,
-                borderColor: activeCategory === 'all' ? kid.color : colors.border,
+                backgroundColor: activeCategory === "all" ? kid.color : colors.cardBackground,
+                borderColor: activeCategory === "all" ? kid.color : colors.border,
               },
             ]}
           >
             <Text
               style={[
                 styles.chipText,
-                { color: activeCategory === 'all' ? '#fff' : colors.secondaryText },
+                { color: activeCategory === "all" ? "#fff" : colors.secondaryText },
               ]}
             >
               All
@@ -217,7 +210,10 @@ export default function KidDetailScreen() {
           {PRESET_CATEGORIES.map((cat) => (
             <Pressable
               key={cat}
-              onPress={() => { selectionHaptic(); setActiveCategory(cat); }}
+              onPress={() => {
+                selectionHaptic();
+                setActiveCategory(cat);
+              }}
               style={[
                 styles.chip,
                 {
@@ -229,7 +225,7 @@ export default function KidDetailScreen() {
               <Text
                 style={[
                   styles.chipText,
-                  { color: activeCategory === cat ? '#fff' : colors.secondaryText },
+                  { color: activeCategory === cat ? "#fff" : colors.secondaryText },
                 ]}
               >
                 {CATEGORY_LABELS[cat]}
@@ -273,7 +269,10 @@ export default function KidDetailScreen() {
 
       {/* FAB for custom duration */}
       <Pressable
-        onPress={() => { mediumHaptic(); setShowCustomModal(true); }}
+        onPress={() => {
+          mediumHaptic();
+          setShowCustomModal(true);
+        }}
         style={({ pressed }) => [
           styles.fab,
           {
@@ -293,12 +292,9 @@ export default function KidDetailScreen() {
         transparent
         onRequestClose={() => setShowCustomModal(false)}
       >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowCustomModal(false)}
-        >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowCustomModal(false)}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.modalKeyboardView}
           >
             <Pressable
@@ -330,19 +326,19 @@ const styles = StyleSheet.create({
   },
   centered: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   errorText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   // Sticky header
   stickyHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 14,
     borderBottomWidth: 1,
   },
   kidSwitcherList: {
@@ -350,12 +346,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   kidSwitcherItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 4,
   },
   kidSwitcherItemActive: {
-    backgroundColor: 'rgba(108, 99, 255, 0.08)',
+    backgroundColor: "rgba(184, 92, 56, 0.12)",
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -364,45 +360,45 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   switcherAvatarText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   switcherName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 6,
   },
 
   // Kid info
   kidInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 4,
   },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   avatarText: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   kidInfoText: {
     flex: 1,
   },
   name: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: "800",
     marginBottom: 2,
   },
   age: {
@@ -411,12 +407,12 @@ const styles = StyleSheet.create({
 
   // Content
   content: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 100,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "800",
     marginBottom: 4,
     marginTop: 4,
   },
@@ -436,45 +432,45 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 999,
     borderWidth: 1,
   },
   chipText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   // Delete
   deleteSection: {
     marginTop: 32,
-    alignItems: 'center',
+    alignItems: "center",
     paddingBottom: 20,
   },
   deleteButton: {
     paddingHorizontal: 28,
     paddingVertical: 14,
-    borderRadius: 28,
+    borderRadius: 999,
     borderWidth: 1,
   },
   deleteButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   // FAB
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
     elevation: 5,
   },
   fabText: {
@@ -484,11 +480,11 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
   },
   modalKeyboardView: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   modalContent: {
     borderTopLeftRadius: 24,
@@ -496,18 +492,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
     paddingTop: 12,
-    maxHeight: '85%',
+    maxHeight: "85%",
   },
   modalHandle: {
     width: 40,
     height: 4,
     borderRadius: 2,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   modalSubtitle: {

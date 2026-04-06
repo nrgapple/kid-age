@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  Easing,
-  runOnJS,
-} from 'react-native-reanimated';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import PercentBar from './PercentBar';
-import AdultComparison from './AdultComparison';
-import { getPercentOfLife, getAdultEquivalent, formatPercent } from '@/lib/calculations';
-import { lightHaptic } from '@/lib/haptics';
+} from "react-native-reanimated";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { formatPercent, getAdultEquivalent, getPercentOfLife } from "@/lib/calculations";
+import { lightHaptic } from "@/lib/haptics";
+import AdultComparison from "./AdultComparison";
+import PercentBar from "./PercentBar";
 
 type TimePresetCardProps = {
   label: string;
@@ -35,7 +34,7 @@ export default function TimePresetCard({
   onShare,
   defaultExpanded = false,
 }: TimePresetCardProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [detailHeight, setDetailHeight] = useState(0);
@@ -60,18 +59,14 @@ export default function TimePresetCard({
   const detailAnimStyle = useAnimatedStyle(() => ({
     height: measured ? animHeight.value * detailHeight : undefined,
     opacity: animHeight.value,
-    overflow: 'hidden' as const,
+    overflow: "hidden" as const,
   }));
 
   return (
     <Pressable
       onPress={toggleExpanded}
-      style={[
-        styles.card,
-        { backgroundColor: colors.cardBackground, borderColor: colors.border },
-      ]}
+      style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
     >
-      {/* Compact header — always visible */}
       <View style={styles.compactRow}>
         <Text style={styles.icon}>{icon}</Text>
         <Text style={[styles.label, { color: colors.text }]} numberOfLines={1}>
@@ -91,11 +86,10 @@ export default function TimePresetCard({
           </Pressable>
         )}
         <Text style={[styles.chevron, { color: colors.secondaryText }]}>
-          {expanded ? '▾' : '›'}
+          {expanded ? "▾" : "›"}
         </Text>
       </View>
 
-      {/* Expandable detail section */}
       <Animated.View style={detailAnimStyle}>
         <View
           onLayout={(e) => {
@@ -115,7 +109,7 @@ export default function TimePresetCard({
               <Text style={[styles.ofLife, { color: colors.secondaryText }]}> of their life</Text>
             </View>
             <PercentBar percent={percent} color={kidColor} />
-            <AdultComparison equivalentRaw={adultEquiv.raw} adultAge={adultAge} />
+            <AdultComparison equivalent={adultEquiv} adultAge={adultAge} />
           </View>
         </View>
       </Animated.View>
@@ -125,32 +119,32 @@ export default function TimePresetCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 14,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
     elevation: 2,
   },
   compactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   icon: {
-    fontSize: 20,
-    marginRight: 10,
+    fontSize: 18,
+    marginRight: 12,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: "700",
     flex: 1,
   },
   percentCompact: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: "700",
     marginLeft: 8,
   },
   shareButton: {
@@ -159,32 +153,32 @@ const styles = StyleSheet.create({
   },
   shareIcon: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   chevron: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 6,
     width: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   offscreen: {
-    position: 'absolute',
+    position: "absolute",
     opacity: 0,
     left: 0,
     right: 0,
   },
   detailContent: {
-    paddingTop: 12,
+    paddingTop: 14,
   },
   percentRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "baseline",
+    marginBottom: 10,
   },
   percentText: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: "800",
   },
   ofLife: {
     fontSize: 14,

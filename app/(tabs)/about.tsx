@@ -1,13 +1,16 @@
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, ScrollView, Text, View, Image } from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import { getSettings } from '@/lib/storage';
-import { DEFAULT_SETTINGS } from '@/lib/types';
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+
+import PageHeader from "@/components/PageHeader";
+import SurfaceCard from "@/components/SurfaceCard";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { getSettings } from "@/lib/storage";
+import { DEFAULT_SETTINGS } from "@/lib/types";
 
 export default function AboutScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
   const [adultAge, setAdultAge] = useState(DEFAULT_SETTINGS.adultAge);
 
@@ -17,57 +20,51 @@ export default function AboutScreen() {
         const settings = await getSettings();
         setAdultAge(settings.adultAge);
       })();
-    }, [])
+    }, []),
   );
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
     >
-      <Image
-        source={require('@/assets/images/icon.png')}
-        style={styles.logo}
-      />
-      <Text style={[styles.title, { color: colors.text }]}>
-        Time Through Their Eyes
-      </Text>
-
-      <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-        <Text style={[styles.heading, { color: colors.text }]}>The Concept</Text>
-        <Text style={[styles.body, { color: colors.secondaryText }]}>
-          Time feels different depending on how long you've been alive. A 2-hour plane ride
-          is a tiny fraction of an adult's life, but for a 1-year-old, it's a much bigger deal.
-        </Text>
-        <Text style={[styles.body, { color: colors.secondaryText, marginTop: 12 }]}>
-          Think about it: when you were 5, a single summer felt like an eternity. That's because
-          3 months was about 5% of your entire life. For a {adultAge}-year-old, that same summer is only
-          about {Math.round((3 / (adultAge * 12)) * 1000) / 10}%.
-        </Text>
+      <View style={styles.hero}>
+        <Image source={require("@/assets/images/icon.png")} style={styles.logo} />
+        <PageHeader
+          eyebrow="About the model"
+          title="Why this app works"
+          subtitle="Time feels elastic because people judge events against how much life they have already lived."
+          centered
+        />
       </View>
 
-      <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-        <Text style={[styles.heading, { color: colors.text }]}>How It Works</Text>
-        <Text style={[styles.body, { color: colors.secondaryText }]}>
-          1. Add your child with their birth date{'\n\n'}
-          2. See preset events (plane rides, school days, vacations) and what percentage of your
-          child's life each one represents{'\n\n'}
-          3. Compare: see how long that event would "feel" to a {adultAge}-year-old adult{'\n\n'}
-          4. Enter custom durations to explore on your own
+      <SurfaceCard style={styles.card}>
+        <Text style={[styles.heading, { color: colors.text }]}>
+          Relative time, not literal time
         </Text>
-      </View>
+        <Text style={[styles.body, { color: colors.secondaryText }]}>
+          A two-hour delay is still two hours on the clock. What changes is the share of lived
+          experience it occupies. That is why the same event can feel minor to an adult and enormous
+          to a toddler.
+        </Text>
+      </SurfaceCard>
 
-      <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+      <SurfaceCard accent style={styles.card}>
+        <Text style={[styles.heading, { color: colors.text }]}>Current baseline</Text>
+        <Text style={[styles.body, { color: colors.secondaryText }]}>
+          Right now the app compares each child against a {adultAge}-year-old adult. Change that in
+          settings if you want the numbers to map more closely to your own lived perspective.
+        </Text>
+      </SurfaceCard>
+
+      <SurfaceCard style={styles.card}>
         <Text style={[styles.heading, { color: colors.text }]}>Privacy</Text>
         <Text style={[styles.body, { color: colors.secondaryText }]}>
-          All data is stored locally on your device. Nothing is sent to any server. Your
-          children's information never leaves your phone.
+          Profiles stay in local device storage. The app does not upload your children’s information
+          to a remote service.
         </Text>
-      </View>
-
-      <Text style={[styles.footer, { color: colors.secondaryText }]}>
-        Made with ❤️ for parents who want to see{'\n'}the world through their child's eyes.
-      </Text>
+      </SurfaceCard>
     </ScrollView>
   );
 }
@@ -79,41 +76,27 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 40,
-    alignItems: 'center',
+  },
+  hero: {
+    alignItems: "center",
+    marginBottom: 4,
   },
   logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
+    width: 96,
+    height: 96,
+    borderRadius: 24,
     marginBottom: 12,
-    marginTop: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 24,
   },
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    width: '100%',
     marginBottom: 16,
   },
   heading: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 10,
+    fontSize: 19,
+    fontWeight: "800",
+    marginBottom: 8,
   },
   body: {
     fontSize: 15,
-    lineHeight: 23,
-  },
-  footer: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 16,
-    lineHeight: 22,
+    lineHeight: 24,
   },
 });

@@ -1,47 +1,47 @@
-const tintColorLight = '#6C63FF';
-const tintColorDark = '#9D97FF';
+const tintColorLight = "#B85C38";
+const tintColorDark = "#F2A775";
 
 export default {
   light: {
-    text: '#1a1a2e',
-    secondaryText: '#6b7280',
-    background: '#f8f9ff',
-    cardBackground: '#ffffff',
+    text: "#223030",
+    secondaryText: "#6A726F",
+    background: "#F4EFE7",
+    cardBackground: "#FFFDF9",
     tint: tintColorLight,
-    tabIconDefault: '#9ca3af',
+    tabIconDefault: "#9AA19C",
     tabIconSelected: tintColorLight,
-    border: '#e5e7eb',
-    accent: '#6C63FF',
-    accentLight: '#ede9fe',
-    danger: '#ef4444',
-    dangerLight: '#fef2f2',
+    border: "#DDD2C4",
+    accent: "#B85C38",
+    accentLight: "#F3E2D3",
+    danger: "#C75146",
+    dangerLight: "#F8E4E1",
   },
   dark: {
-    text: '#f9fafb',
-    secondaryText: '#9ca3af',
-    background: '#0f0f23',
-    cardBackground: '#1a1a2e',
+    text: "#F7F1E8",
+    secondaryText: "#C0BBB1",
+    background: "#1E2524",
+    cardBackground: "#2A3331",
     tint: tintColorDark,
-    tabIconDefault: '#6b7280',
+    tabIconDefault: "#7D877F",
     tabIconSelected: tintColorDark,
-    border: '#2d2d44',
-    accent: '#9D97FF',
-    accentLight: '#1e1b4b',
-    danger: '#f87171',
-    dangerLight: '#451a1a',
+    border: "#46514D",
+    accent: "#F2A775",
+    accentLight: "#47362C",
+    danger: "#F08A80",
+    dangerLight: "#4B2D29",
   },
 
-  // Pastel accent colors for kid cards
+  // Accent colors for kid cards and comparisons.
   kidColors: [
-    '#6C63FF', // purple
-    '#FF6B6B', // coral
-    '#4ECDC4', // teal
-    '#FFE66D', // yellow
-    '#A8E6CF', // mint
-    '#FF8A5C', // orange
-    '#88D8B0', // green
-    '#C3AED6', // lavender
-    '#F8B500', // gold
-    '#7EC8E3', // sky blue
+    "#C96D44",
+    "#2A9D8F",
+    "#5B7DB1",
+    "#D6A239",
+    "#A15E6A",
+    "#5F8F57",
+    "#8A6BBE",
+    "#4D9BC1",
+    "#D97D54",
+    "#7B8E57",
   ],
 };

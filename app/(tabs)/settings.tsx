@@ -1,33 +1,29 @@
-import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
-  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
-  Pressable,
-  Platform,
-  Alert,
-  KeyboardAvoidingView,
-} from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import { getSettings, saveSettings } from '@/lib/storage';
-import { DEFAULT_SETTINGS } from '@/lib/types';
+} from "react-native";
 
-function showAlert(title: string, message: string) {
-  if (Platform.OS === 'web') {
-    window.alert(`${title}: ${message}`);
-  } else {
-    Alert.alert(title, message);
-  }
-}
+import PageHeader from "@/components/PageHeader";
+import SurfaceCard from "@/components/SurfaceCard";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { showMessage } from "@/lib/platform";
+import { getSettings, saveSettings } from "@/lib/storage";
+import { DEFAULT_SETTINGS } from "@/lib/types";
 
 export default function SettingsScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
-  const [adultAgeText, setAdultAgeText] = useState('');
+
+  const [adultAgeText, setAdultAgeText] = useState("");
   const [savedAge, setSavedAge] = useState(DEFAULT_SETTINGS.adultAge);
   const [saving, setSaving] = useState(false);
 
@@ -38,16 +34,16 @@ export default function SettingsScreen() {
         setAdultAgeText(String(settings.adultAge));
         setSavedAge(settings.adultAge);
       })();
-    }, [])
+    }, []),
   );
 
   const parsedAge = parseFloat(adultAgeText);
-  const isValidAge = !isNaN(parsedAge) && parsedAge >= 1 && parsedAge <= 120;
+  const isValidAge = !Number.isNaN(parsedAge) && parsedAge >= 1 && parsedAge <= 120;
   const hasChanges = isValidAge && parsedAge !== savedAge;
 
   const handleSave = async () => {
     if (!isValidAge) {
-      showAlert('Invalid Age', 'Please enter an age between 1 and 120.');
+      showMessage("Invalid age", "Enter a reference age between 1 and 120.");
       return;
     }
 
@@ -57,10 +53,10 @@ export default function SettingsScreen() {
       await saveSettings({ adultAge: age });
       setSavedAge(age);
       setAdultAgeText(String(age));
-      showAlert('Saved', 'Your adult age has been updated.');
+      showMessage("Saved", "Reference age updated.");
     } catch (error) {
-      console.error('Save failed:', error);
-      showAlert('Error', 'Failed to save settings. Please try again.');
+      console.error("Save failed:", error);
+      showMessage("Save failed", "The setting could not be stored. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -69,32 +65,30 @@ export default function SettingsScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
         style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.emoji}>⚙️</Text>
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+        <PageHeader
+          eyebrow="Calibration"
+          title="Reference age"
+          subtitle="Choose the adult age the app should use when it translates a child’s experience into an adult equivalent."
+        />
 
-        <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-          <Text style={[styles.heading, { color: colors.text }]}>Your Age</Text>
-          <Text style={[styles.description, { color: colors.secondaryText }]}>
-            This is the reference adult age used for comparisons. Events are scaled to show how they
-            would feel to someone this age.
-          </Text>
-
+        <SurfaceCard style={styles.card}>
           <View style={styles.field}>
-            <Text style={[styles.label, { color: colors.secondaryText }]}>Age (years)</Text>
+            <Text style={[styles.label, { color: colors.secondaryText }]}>Age in years</Text>
             <TextInput
               style={[
                 styles.input,
                 {
                   color: colors.text,
                   backgroundColor: colors.background,
-                  borderColor: isValidAge || adultAgeText === '' ? colors.border : colors.danger,
+                  borderColor: adultAgeText === "" || isValidAge ? colors.border : colors.danger,
                 },
               ]}
               value={adultAgeText}
@@ -105,43 +99,42 @@ export default function SettingsScreen() {
               returnKeyType="done"
               maxLength={3}
             />
-            {adultAgeText !== '' && !isValidAge && (
+            {adultAgeText !== "" && !isValidAge ? (
               <Text style={[styles.errorText, { color: colors.danger }]}>
-                Please enter a valid age between 1 and 120
+                Enter a whole-person age between 1 and 120.
               </Text>
-            )}
+            ) : null}
           </View>
 
           <Pressable
             onPress={handleSave}
             disabled={!hasChanges || saving}
             style={({ pressed }) => [
-              styles.saveButton,
+              styles.primaryButton,
               {
                 backgroundColor: hasChanges ? colors.accent : colors.border,
-                opacity: pressed && hasChanges ? 0.85 : 1,
+                opacity: pressed && hasChanges ? 0.88 : 1,
               },
             ]}
           >
             <Text
               style={[
-                styles.saveButtonText,
-                { color: hasChanges ? '#fff' : colors.secondaryText },
+                styles.primaryButtonText,
+                { color: hasChanges ? "#fff" : colors.secondaryText },
               ]}
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? "Saving..." : "Save setting"}
             </Text>
           </Pressable>
-        </View>
+        </SurfaceCard>
 
-        <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-          <Text style={[styles.heading, { color: colors.text }]}>About This Setting</Text>
-          <Text style={[styles.description, { color: colors.secondaryText }]}>
-            The default is 30 years old. Changing this to your actual age makes the comparisons
-            more personal — you'll see how events in your child's life would feel relative to your
-            own lived experience.
+        <SurfaceCard accent>
+          <Text style={[styles.tipTitle, { color: colors.text }]}>How to choose it</Text>
+          <Text style={[styles.tipBody, { color: colors.secondaryText }]}>
+            Use your actual age if you want the comparisons to feel personal. Leave it near the
+            default if you want a generic adult baseline for quick perspective checks.
           </Text>
-        </View>
+        </SurfaceCard>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -154,68 +147,51 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 40,
-    alignItems: 'center',
-  },
-  emoji: {
-    fontSize: 56,
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 24,
   },
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    width: '100%',
-    marginBottom: 16,
-  },
-  heading: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 15,
-    lineHeight: 23,
     marginBottom: 16,
   },
   field: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: "SpaceMono",
+    fontSize: 12,
+    letterSpacing: 0.8,
     marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   input: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 16,
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: "800",
+    textAlign: "center",
   },
   errorText: {
     fontSize: 13,
-    marginTop: 6,
-    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 8,
+    textAlign: "center",
   },
-  saveButton: {
-    width: '100%',
+  primaryButton: {
+    borderRadius: 999,
     paddingVertical: 16,
-    borderRadius: 28,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  saveButtonText: {
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  tipTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "800",
+    marginBottom: 8,
+  },
+  tipBody: {
+    fontSize: 15,
+    lineHeight: 24,
   },
 });

@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Share, Platform } from 'react-native';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import PercentBar from './PercentBar';
-import AdultComparison from './AdultComparison';
-import { getPercentOfLife, getAdultEquivalent, formatPercent } from '@/lib/calculations';
+import { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { formatPercent, getAdultEquivalent, getPercentOfLife } from "@/lib/calculations";
+import { shareMessage } from "@/lib/platform";
+import AdultComparison from "./AdultComparison";
+import PercentBar from "./PercentBar";
 
-type Unit = 'minutes' | 'hours' | 'days' | 'weeks';
+type Unit = "minutes" | "hours" | "days" | "weeks";
 
 const UNIT_TO_MINUTES: Record<Unit, number> = {
   minutes: 1,
@@ -28,10 +29,10 @@ export default function CustomDurationInput({
   adultAge,
   kidName,
 }: CustomDurationInputProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
-  const [value, setValue] = useState('');
-  const [unit, setUnit] = useState<Unit>('hours');
+  const [value, setValue] = useState("");
+  const [unit, setUnit] = useState<Unit>("hours");
 
   const numericValue = parseFloat(value) || 0;
   const totalMinutes = numericValue * UNIT_TO_MINUTES[unit];
@@ -40,22 +41,14 @@ export default function CustomDurationInput({
   const percent = hasInput ? getPercentOfLife(totalMinutes, kidAgeMinutes) : 0;
   const adultEquiv = hasInput ? getAdultEquivalent(totalMinutes, kidAgeMinutes, adultAge) : null;
 
-  const units: Unit[] = ['minutes', 'hours', 'days', 'weeks'];
+  const units: Unit[] = ["minutes", "hours", "days", "weeks"];
 
   const handleShare = () => {
     if (!hasInput || !adultEquiv) return;
     const durationLabel = `${numericValue} ${unit}`;
-    const name = kidName || 'your child';
+    const name = kidName || "your child";
     const message = `Did you know? ${durationLabel} is ${formatPercent(percent)} of ${name}'s life! To a ${adultAge || 30}-year-old, that feels like ${adultEquiv.raw}.\n\n— Time Through Their Eyes`;
-    if (Platform.OS === 'web') {
-      if (navigator.share) {
-        navigator.share({ text: message }).catch(() => {});
-      } else {
-        navigator.clipboard?.writeText(message);
-      }
-    } else {
-      Share.share({ message });
-    }
+    shareMessage(message).catch(() => {});
   };
 
   return (
@@ -91,12 +84,7 @@ export default function CustomDurationInput({
               },
             ]}
           >
-            <Text
-              style={[
-                styles.unitText,
-                { color: unit === u ? '#fff' : colors.secondaryText },
-              ]}
-            >
+            <Text style={[styles.unitText, { color: unit === u ? "#fff" : colors.secondaryText }]}>
               {u}
             </Text>
           </Pressable>
@@ -106,16 +94,14 @@ export default function CustomDurationInput({
       {hasInput && (
         <View style={styles.result}>
           <View style={styles.percentRow}>
-            <Text style={[styles.percentText, { color: kidColor }]}>
-              {formatPercent(percent)}
-            </Text>
+            <Text style={[styles.percentText, { color: kidColor }]}>{formatPercent(percent)}</Text>
             <Text style={[styles.ofLife, { color: colors.secondaryText }]}> of their life</Text>
             <Pressable onPress={handleShare} hitSlop={8} style={styles.shareButton}>
               <Text style={[styles.shareIcon, { color: colors.secondaryText }]}>↗</Text>
             </Pressable>
           </View>
           <PercentBar percent={percent} color={kidColor} />
-          {adultEquiv && <AdultComparison equivalentRaw={adultEquiv.raw} adultAge={adultAge} />}
+          {adultEquiv ? <AdultComparison equivalent={adultEquiv} adultAge={adultAge} /> : null}
         </View>
       )}
     </View>
@@ -131,39 +117,39 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   unitRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 4,
   },
   unitButton: {
     paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 999,
     borderWidth: 1,
     marginRight: 8,
   },
   unitText: {
     fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'capitalize',
+    fontWeight: "600",
+    textTransform: "capitalize",
   },
   result: {
     marginTop: 16,
   },
   percentRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "baseline",
+    marginBottom: 10,
   },
   percentText: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: "800",
   },
   ofLife: {
     fontSize: 14,
@@ -174,6 +160,6 @@ const styles = StyleSheet.create({
   },
   shareIcon: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

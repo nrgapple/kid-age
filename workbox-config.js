@@ -1,18 +1,16 @@
 module.exports = {
-  globDirectory: 'dist/',
-  globPatterns: [
-    '**/*.{js,html,json,png,ico,ttf}',
-  ],
-  swDest: 'dist/sw.js',
+  globDirectory: "dist/",
+  globPatterns: ["**/*.{js,html,json,png,ico,ttf}"],
+  swDest: "dist/sw.js",
   // Don't cache too aggressively - only precache the app shell
   maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
   runtimeCaching: [
     {
       // Cache page navigations (HTML) with a Network First strategy
-      urlPattern: ({ request }) => request.mode === 'navigate',
-      handler: 'NetworkFirst',
+      urlPattern: ({ request }) => request.mode === "navigate",
+      handler: "NetworkFirst",
       options: {
-        cacheName: 'pages',
+        cacheName: "pages",
         expiration: {
           maxEntries: 20,
         },
@@ -21,10 +19,10 @@ module.exports = {
     {
       // Cache JS/CSS assets with Stale While Revalidate
       urlPattern: ({ request }) =>
-        request.destination === 'script' || request.destination === 'style',
-      handler: 'StaleWhileRevalidate',
+        request.destination === "script" || request.destination === "style",
+      handler: "StaleWhileRevalidate",
       options: {
-        cacheName: 'assets',
+        cacheName: "assets",
         expiration: {
           maxEntries: 50,
         },
@@ -32,10 +30,10 @@ module.exports = {
     },
     {
       // Cache images
-      urlPattern: ({ request }) => request.destination === 'image',
-      handler: 'CacheFirst',
+      urlPattern: ({ request }) => request.destination === "image",
+      handler: "CacheFirst",
       options: {
-        cacheName: 'images',
+        cacheName: "images",
         expiration: {
           maxEntries: 30,
           maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days

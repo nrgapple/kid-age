@@ -1,15 +1,15 @@
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 
 /**
  * Cross-platform haptic feedback utilities.
  * On native, uses expo-haptics. On web, silently no-ops.
  */
 
-let Haptics: typeof import('expo-haptics') | null = null;
+let Haptics: typeof import("expo-haptics") | null = null;
 
-if (Platform.OS !== 'web') {
+if (Platform.OS !== "web") {
   try {
-    Haptics = require('expo-haptics');
+    Haptics = require("expo-haptics");
   } catch {
     // expo-haptics not available
   }

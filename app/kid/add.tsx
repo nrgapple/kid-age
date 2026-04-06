@@ -1,46 +1,42 @@
-import React, { useState } from 'react';
+import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
-  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
-  Pressable,
-  Platform,
-  Alert,
-  KeyboardAvoidingView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import { saveKid } from '@/lib/storage';
+} from "react-native";
 
-// Only import DateTimePicker on native platforms
-let DateTimePicker: any = null;
-if (Platform.OS !== 'web') {
-  DateTimePicker = require('@react-native-community/datetimepicker').default;
-}
+import PageHeader from "@/components/PageHeader";
+import SurfaceCard from "@/components/SurfaceCard";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { generateId, showMessage } from "@/lib/platform";
+import { saveKid } from "@/lib/storage";
 
-// Simple ID generator that works everywhere (no crypto dependency)
-function generateId(): string {
-  return Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 10);
-}
+type NativeDatePicker = typeof import("@react-native-community/datetimepicker").default;
+type WebDateChangeEvent = {
+  target: {
+    value: string;
+  };
+};
 
-// Cross-platform alert
-function showAlert(title: string, message: string) {
-  if (Platform.OS === 'web') {
-    window.alert(`${title}: ${message}`);
-  } else {
-    Alert.alert(title, message);
-  }
+let DateTimePicker: NativeDatePicker | null = null;
+if (Platform.OS !== "web") {
+  DateTimePicker = require("@react-native-community/datetimepicker").default;
 }
 
 export default function AddKidScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,49 +45,44 @@ export default function AddKidScreen() {
   const hasDate = birthDate !== null;
   const canSave = hasName && hasDate && !saving;
 
-  const onNativeDateChange = (_event: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
+  const onNativeDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
       setShowDatePicker(false);
     }
-    if (_event.type === 'dismissed') {
-      return;
-    }
-    if (selectedDate) {
-      setBirthDate(selectedDate);
-    }
+
+    if (event.type === "dismissed") return;
+    if (selectedDate) setBirthDate(selectedDate);
   };
 
-  const onWebDateChange = (e: any) => {
-    const dateString = e.target.value;
-    if (dateString) {
-      const [year, month, day] = dateString.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      if (!isNaN(date.getTime())) {
-        setBirthDate(date);
-      }
-    } else {
+  const onWebDateChange = (event: WebDateChangeEvent) => {
+    const value = event.target.value;
+    if (!value) {
       setBirthDate(null);
+      return;
+    }
+
+    const [year, month, day] = value.split("-").map(Number);
+    const nextDate = new Date(year, month - 1, day);
+    if (!Number.isNaN(nextDate.getTime())) {
+      setBirthDate(nextDate);
     }
   };
 
   const handleSave = async () => {
     if (!canSave || !birthDate) return;
 
-    const trimmedName = name.trim();
-
     if (birthDate > new Date()) {
-      showAlert('Invalid Date', 'Birth date cannot be in the future.');
+      showMessage("Invalid date", "Birth date cannot be in the future.");
       return;
     }
 
     setSaving(true);
     try {
-      const kidColor =
-        Colors.kidColors[Math.floor(Math.random() * Colors.kidColors.length)];
+      const kidColor = Colors.kidColors[Math.floor(Math.random() * Colors.kidColors.length)];
 
       await saveKid({
         id: generateId(),
-        name: trimmedName,
+        name: name.trim(),
         birthDate: birthDate.toISOString(),
         color: kidColor,
         createdAt: new Date().toISOString(),
@@ -99,60 +90,58 @@ export default function AddKidScreen() {
 
       router.back();
     } catch (error) {
-      console.error('Save failed:', error);
-      showAlert('Error', 'Failed to save. Please try again.');
+      console.error("Save failed:", error);
+      showMessage("Save failed", "The profile could not be stored. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  const formatDateDisplay = (date: Date) => {
-    return date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+  const formatDateDisplay = (date: Date) =>
+    date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
-  };
 
-  // Format date as YYYY-MM-DD for the HTML input value
   const getWebDateValue = () => {
-    if (!birthDate) return '';
+    if (!birthDate) return "";
     const y = birthDate.getFullYear();
-    const m = String(birthDate.getMonth() + 1).padStart(2, '0');
-    const d = String(birthDate.getDate()).padStart(2, '0');
+    const m = String(birthDate.getMonth() + 1).padStart(2, "0");
+    const d = String(birthDate.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
   };
 
   const getTodayString = () => {
     const now = new Date();
     const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
   };
 
   const renderWebDatePicker = () => (
     <View>
-      {React.createElement('input', {
-        type: 'date',
+      {React.createElement("input", {
+        type: "date",
         value: getWebDateValue(),
         onChange: onWebDateChange,
         max: getTodayString(),
-        min: '2000-01-01',
+        min: "2000-01-01",
         style: {
-          width: '100%',
-          padding: '16px 18px',
-          fontSize: '18px',
-          fontWeight: '500',
-          fontFamily: 'System, -apple-system, BlinkMacSystemFont, sans-serif',
-          borderRadius: '14px',
+          width: "100%",
+          padding: "16px 18px",
+          fontSize: "18px",
+          fontWeight: "600",
+          fontFamily: "System, -apple-system, BlinkMacSystemFont, sans-serif",
+          borderRadius: "16px",
           border: `1px solid ${hasDate ? colors.accent : colors.border}`,
-          backgroundColor: colors.cardBackground,
+          backgroundColor: colors.background,
           color: hasDate ? colors.text : colors.secondaryText,
-          boxSizing: 'border-box',
-          outline: 'none',
-          WebkitAppearance: 'none',
-          cursor: 'pointer',
+          boxSizing: "border-box",
+          outline: "none",
+          WebkitAppearance: "none",
+          cursor: "pointer",
         },
       })}
     </View>
@@ -163,124 +152,112 @@ export default function AddKidScreen() {
       <Pressable
         onPress={() => setShowDatePicker(true)}
         style={[
-          styles.dateButton,
+          styles.inputShell,
           {
-            backgroundColor: colors.cardBackground,
+            backgroundColor: colors.background,
             borderColor: hasDate ? colors.accent : colors.border,
           },
         ]}
       >
-        <Text
-          style={[
-            styles.dateButtonText,
-            { color: hasDate ? colors.text : colors.secondaryText },
-          ]}
-        >
-          {hasDate ? formatDateDisplay(birthDate) : 'Tap to select date'}
+        <Text style={[styles.inputText, { color: hasDate ? colors.text : colors.secondaryText }]}>
+          {hasDate ? formatDateDisplay(birthDate) : "Select a birth date"}
         </Text>
       </Pressable>
 
-      {showDatePicker && DateTimePicker && (
+      {showDatePicker && DateTimePicker ? (
         <View style={styles.datePickerContainer}>
           <DateTimePicker
             value={birthDate ?? new Date()}
             mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={onNativeDateChange}
             maximumDate={new Date()}
             minimumDate={new Date(2000, 0, 1)}
-            themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
+            themeVariant={colorScheme === "dark" ? "dark" : "light"}
           />
-          {Platform.OS === 'ios' && (
+          {Platform.OS === "ios" ? (
             <Pressable
               onPress={() => {
-                if (!birthDate) {
-                  setBirthDate(new Date());
-                }
+                if (!birthDate) setBirthDate(new Date());
                 setShowDatePicker(false);
               }}
-              style={[styles.doneButton, { backgroundColor: colors.accent }]}
+              style={[styles.inlineButton, { backgroundColor: colors.accent }]}
             >
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.inlineButtonText}>Done</Text>
             </Pressable>
-          )}
+          ) : null}
         </View>
-      )}
+      ) : null}
     </View>
   );
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
         style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.emoji}>👶</Text>
-        <Text style={[styles.title, { color: colors.text }]}>Add a Child</Text>
+        <PageHeader
+          eyebrow="New profile"
+          title="Add a child"
+          subtitle="Store a name and birth date locally so the app can translate everyday durations into a share of their life."
+        />
 
-        {/* Name field */}
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.secondaryText }]}>Name</Text>
-          <TextInput
-            style={[
-              styles.input,
+        <SurfaceCard style={styles.card}>
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.secondaryText }]}>Name</Text>
+            <TextInput
+              style={[
+                styles.inputShell,
+                {
+                  color: colors.text,
+                  backgroundColor: colors.background,
+                  borderColor: hasName ? colors.accent : colors.border,
+                },
+              ]}
+              value={name}
+              onChangeText={setName}
+              placeholder="Avery"
+              placeholderTextColor={colors.secondaryText}
+              autoFocus
+              returnKeyType="done"
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: colors.secondaryText }]}>Birth date</Text>
+            {Platform.OS === "web" ? renderWebDatePicker() : renderNativeDatePicker()}
+          </View>
+
+          {!hasName || !hasDate ? (
+            <Text style={[styles.hint, { color: colors.secondaryText }]}>
+              Enter both fields to save the profile.
+            </Text>
+          ) : null}
+
+          <Pressable
+            onPress={handleSave}
+            disabled={!canSave}
+            style={({ pressed }) => [
+              styles.primaryButton,
               {
-                color: colors.text,
-                backgroundColor: colors.cardBackground,
-                borderColor: hasName ? colors.accent : colors.border,
+                backgroundColor: canSave ? colors.accent : colors.border,
+                opacity: pressed && canSave ? 0.88 : 1,
               },
             ]}
-            value={name}
-            onChangeText={setName}
-            placeholder="Enter name"
-            placeholderTextColor={colors.secondaryText}
-            autoFocus
-            returnKeyType="done"
-          />
-        </View>
-
-        {/* Date of birth field */}
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: colors.secondaryText }]}>Date of Birth</Text>
-          {Platform.OS === 'web' ? renderWebDatePicker() : renderNativeDatePicker()}
-        </View>
-
-        {/* Validation hints */}
-        {(!hasName || !hasDate) && (
-          <Text style={[styles.hint, { color: colors.secondaryText }]}>
-            {!hasName && !hasDate
-              ? 'Enter a name and select a date of birth to continue'
-              : !hasName
-              ? 'Enter a name to continue'
-              : 'Select a date of birth to continue'}
-          </Text>
-        )}
-
-        {/* Save button */}
-        <Pressable
-          onPress={handleSave}
-          disabled={!canSave}
-          style={({ pressed }) => [
-            styles.saveButton,
-            {
-              backgroundColor: canSave ? colors.accent : colors.border,
-              opacity: pressed && canSave ? 0.85 : 1,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.saveButtonText,
-              { color: canSave ? '#fff' : colors.secondaryText },
-            ]}
           >
-            {saving ? 'Saving...' : 'Save'}
-          </Text>
-        </Pressable>
+            <Text
+              style={[styles.primaryButtonText, { color: canSave ? "#fff" : colors.secondaryText }]}
+            >
+              {saving ? "Saving profile..." : "Save profile"}
+            </Text>
+          </Pressable>
+        </SurfaceCard>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -291,77 +268,60 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 24,
-    alignItems: 'center',
+    padding: 20,
+    paddingBottom: 40,
   },
-  emoji: {
-    fontSize: 56,
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    marginBottom: 32,
+  card: {
+    marginBottom: 16,
   },
   field: {
-    width: '100%',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontFamily: "SpaceMono",
+    fontSize: 12,
+    letterSpacing: 0.8,
     marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
-  input: {
+  inputShell: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 16,
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "600",
   },
-  dateButton: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-  },
-  dateButtonText: {
+  inputText: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "600",
   },
   datePickerContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 12,
   },
-  doneButton: {
-    paddingHorizontal: 32,
+  inlineButton: {
+    paddingHorizontal: 26,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 999,
     marginTop: 8,
   },
-  doneButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  inlineButtonText: {
+    color: "#fff",
+    fontWeight: "700",
   },
   hint: {
     fontSize: 14,
-    textAlign: 'center',
+    lineHeight: 22,
     marginBottom: 16,
   },
-  saveButton: {
-    width: '100%',
+  primaryButton: {
+    borderRadius: 999,
     paddingVertical: 16,
-    borderRadius: 28,
-    alignItems: 'center',
-    marginTop: 8,
+    alignItems: "center",
   },
-  saveButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

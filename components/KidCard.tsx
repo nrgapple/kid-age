@@ -1,15 +1,18 @@
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated, Platform } from 'react-native';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import { Kid } from '@/lib/types';
-import { formatAge } from '@/lib/calculations';
-import { lightHaptic } from '@/lib/haptics';
+import { useRef } from "react";
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { formatAge } from "@/lib/calculations";
+import { lightHaptic } from "@/lib/haptics";
+import type { Kid } from "@/lib/types";
 
 // Only import Swipeable on native (it has spotty web support)
-let Swipeable: any = null;
-if (Platform.OS !== 'web') {
-  Swipeable = require('react-native-gesture-handler').Swipeable;
+type NativeSwipeable = typeof import("react-native-gesture-handler").Swipeable;
+type SwipeableInstance = InstanceType<NativeSwipeable>;
+
+let Swipeable: NativeSwipeable | null = null;
+if (Platform.OS !== "web") {
+  Swipeable = require("react-native-gesture-handler").Swipeable;
 }
 
 type KidCardProps = {
@@ -19,20 +22,20 @@ type KidCardProps = {
 };
 
 export default function KidCard({ kid, onPress, onDelete }: KidCardProps) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
   const initial = kid.name.charAt(0).toUpperCase();
   const age = formatAge(new Date(kid.birthDate));
-  const swipeableRef = useRef<any>(null);
+  const swipeableRef = useRef<SwipeableInstance | null>(null);
 
   const renderRightActions = (
     _progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>
+    dragX: Animated.AnimatedInterpolation<number>,
   ) => {
     const translateX = dragX.interpolate({
       inputRange: [-100, 0],
       outputRange: [0, 100],
-      extrapolate: 'clamp',
+      extrapolate: "clamp",
     });
 
     return (
@@ -75,7 +78,7 @@ export default function KidCard({ kid, onPress, onDelete }: KidCardProps) {
       </View>
 
       {/* On web, show a visible delete button since swipe doesn't work */}
-      {Platform.OS === 'web' ? (
+      {Platform.OS === "web" ? (
         <Pressable
           onPress={(e) => {
             e.stopPropagation();
@@ -97,7 +100,7 @@ export default function KidCard({ kid, onPress, onDelete }: KidCardProps) {
   );
 
   // On native, wrap in Swipeable for swipe-to-delete
-  if (Platform.OS !== 'web' && Swipeable) {
+  if (Platform.OS !== "web" && Swipeable) {
     return (
       <Swipeable
         ref={swipeableRef}
@@ -117,38 +120,38 @@ export default function KidCard({ kid, onPress, onDelete }: KidCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
     elevation: 2,
   },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 14,
   },
   avatarText: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   info: {
     flex: 1,
   },
   name: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 3,
   },
   age: {
@@ -156,37 +159,37 @@ const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 28,
-    fontWeight: '300',
+    fontWeight: "300",
     marginLeft: 8,
   },
   webDeleteButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 8,
   },
   webDeleteText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   deleteAction: {
-    justifyContent: 'center',
-    alignItems: 'flex-end',
+    justifyContent: "center",
+    alignItems: "flex-end",
     marginBottom: 12,
   },
   swipeDeleteButton: {
-    backgroundColor: '#ef4444',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#ef4444",
+    justifyContent: "center",
+    alignItems: "center",
     width: 90,
-    height: '100%',
-    borderRadius: 16,
+    height: "100%",
+    borderRadius: 20,
   },
   swipeDeleteText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

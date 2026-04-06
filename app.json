@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f8f9ff"
+      "backgroundColor": "#F4EFE7"
     },
     "ios": {
       "supportsTablet": true
@@ -19,7 +19,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#BD98C2"
+        "backgroundColor": "#F4EFE7"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -31,13 +31,10 @@
       "name": "Time Through Their Eyes",
       "shortName": "Kid Age",
       "description": "See how time feels through your child's eyes.",
-      "themeColor": "#6C63FF",
-      "backgroundColor": "#f8f9ff"
+      "themeColor": "#B85C38",
+      "backgroundColor": "#F4EFE7"
     },
-    "plugins": [
-      "expo-router",
-      "@react-native-community/datetimepicker"
-    ],
+    "plugins": ["expo-router", "@react-native-community/datetimepicker"],
     "experiments": {
       "typedRoutes": true
     }

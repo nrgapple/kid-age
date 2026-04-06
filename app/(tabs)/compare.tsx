@@ -1,23 +1,27 @@
-import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+
+import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
+import PercentBar from "@/components/PercentBar";
+import SurfaceCard from "@/components/SurfaceCard";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
 import {
-  StyleSheet,
-  ScrollView,
-  Text,
-  View,
-  Pressable,
-} from 'react-native';
-import { useFocusEffect } from 'expo-router';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import { Kid, DEFAULT_SETTINGS } from '@/lib/types';
-import { getKids, getSettings } from '@/lib/storage';
-import { getAgeInMinutes, getPercentOfLife, getAdultEquivalent, formatPercent } from '@/lib/calculations';
-import { PRESETS } from '@/lib/presets';
-import PercentBar from '@/components/PercentBar';
+  formatPercent,
+  getAdultEquivalent,
+  getAgeInMinutes,
+  getPercentOfLife,
+} from "@/lib/calculations";
+import { PRESETS } from "@/lib/presets";
+import { getKids, getSettings } from "@/lib/storage";
+import { DEFAULT_SETTINGS, type Kid } from "@/lib/types";
 
 export default function CompareScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
+
   const [kids, setKids] = useState<Kid[]>([]);
   const [selectedKids, setSelectedKids] = useState<Set<string>>(new Set());
   const [selectedPresetIndex, setSelectedPresetIndex] = useState(0);
@@ -26,18 +30,17 @@ export default function CompareScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        const [loaded, settings] = await Promise.all([getKids(), getSettings()]);
-        setKids(loaded);
+        const [loadedKids, settings] = await Promise.all([getKids(), getSettings()]);
+        setKids(loadedKids);
         setAdultAge(settings.adultAge);
-        // Auto-select all kids on load
-        setSelectedKids(new Set(loaded.map((k) => k.id)));
+        setSelectedKids(new Set(loadedKids.map((kid) => kid.id)));
       })();
-    }, [])
+    }, []),
   );
 
   const toggleKid = (kidId: string) => {
-    setSelectedKids((prev) => {
-      const next = new Set(prev);
+    setSelectedKids((current) => {
+      const next = new Set(current);
       if (next.has(kidId)) {
         next.delete(kidId);
       } else {
@@ -47,20 +50,20 @@ export default function CompareScreen() {
     });
   };
 
-  const preset = PRESETS[selectedPresetIndex];
-  const comparedKids = kids.filter((k) => selectedKids.has(k.id));
-
   if (kids.length < 2) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={styles.emptyIcon}>👥</Text>
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>Add More Kids</Text>
-        <Text style={[styles.emptySubtitle, { color: colors.secondaryText }]}>
-          Add at least two children to compare{'\n'}how time feels to each of them
-        </Text>
+        <EmptyState
+          eyebrow="Need more profiles"
+          title="Compare needs at least two children"
+          body="Add one more profile and this view will line up the same event across each child so you can see who experiences it more intensely."
+        />
       </View>
     );
   }
+
+  const preset = PRESETS[selectedPresetIndex];
+  const comparedKids = kids.filter((kid) => selectedKids.has(kid.id));
 
   return (
     <ScrollView
@@ -68,16 +71,29 @@ export default function CompareScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Kid selector */}
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Select Kids</Text>
+      <PageHeader
+        eyebrow="Cross-profile view"
+        title="Compare one event across your kids"
+        subtitle={`Using ${adultAge} years old as the adult reference point.`}
+      />
+
+      <SurfaceCard accent style={styles.card}>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>How to read this</Text>
+        <Text style={[styles.cardBody, { color: colors.secondaryText }]}>
+          Larger percentages mean the event takes up more of that child&apos;s lifetime, so it will
+          usually feel longer and heavier.
+        </Text>
+      </SurfaceCard>
+
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Who is included</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.kidSelector}
-        contentContainerStyle={styles.kidSelectorContent}
+        contentContainerStyle={styles.chipRow}
+        style={styles.selector}
       >
         {kids.map((kid) => {
-          const isSelected = selectedKids.has(kid.id);
+          const selected = selectedKids.has(kid.id);
           return (
             <Pressable
               key={kid.id}
@@ -85,28 +101,18 @@ export default function CompareScreen() {
               style={[
                 styles.kidChip,
                 {
-                  backgroundColor: isSelected ? kid.color + '20' : colors.cardBackground,
-                  borderColor: isSelected ? kid.color : colors.border,
+                  backgroundColor: selected ? `${kid.color}22` : colors.cardBackground,
+                  borderColor: selected ? kid.color : colors.border,
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.kidChipAvatar,
-                  {
-                    backgroundColor: kid.color,
-                    opacity: isSelected ? 1 : 0.4,
-                  },
-                ]}
-              >
-                <Text style={styles.kidChipAvatarText}>
-                  {kid.name.charAt(0).toUpperCase()}
-                </Text>
+              <View style={[styles.kidChipAvatar, { backgroundColor: kid.color }]}>
+                <Text style={styles.kidChipAvatarText}>{kid.name.charAt(0).toUpperCase()}</Text>
               </View>
               <Text
                 style={[
                   styles.kidChipName,
-                  { color: isSelected ? colors.text : colors.secondaryText },
+                  { color: selected ? colors.text : colors.secondaryText },
                 ]}
               >
                 {kid.name}
@@ -116,93 +122,78 @@ export default function CompareScreen() {
         })}
       </ScrollView>
 
-      {/* Event selector */}
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Choose an Event</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Which event</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.presetSelector}
-        contentContainerStyle={styles.presetSelectorContent}
+        contentContainerStyle={styles.chipRow}
+        style={styles.selector}
       >
-        {PRESETS.map((p, index) => {
-          const isActive = index === selectedPresetIndex;
+        {PRESETS.map((item, index) => {
+          const active = index === selectedPresetIndex;
           return (
             <Pressable
-              key={p.label}
+              key={item.label}
               onPress={() => setSelectedPresetIndex(index)}
               style={[
-                styles.presetChip,
+                styles.eventChip,
                 {
-                  backgroundColor: isActive ? colors.accent : colors.cardBackground,
-                  borderColor: isActive ? colors.accent : colors.border,
+                  backgroundColor: active ? colors.accent : colors.cardBackground,
+                  borderColor: active ? colors.accent : colors.border,
                 },
               ]}
             >
-              <Text style={styles.presetChipIcon}>{p.icon}</Text>
+              <Text style={styles.eventIcon}>{item.icon}</Text>
               <Text
-                style={[
-                  styles.presetChipLabel,
-                  { color: isActive ? '#fff' : colors.secondaryText },
-                ]}
+                style={[styles.eventLabel, { color: active ? "#fff" : colors.secondaryText }]}
                 numberOfLines={1}
               >
-                {p.label}
+                {item.label}
               </Text>
             </Pressable>
           );
         })}
       </ScrollView>
 
-      {/* Comparison results */}
-      {comparedKids.length > 0 && (
-        <View style={styles.resultsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {preset.icon} {preset.label}
-          </Text>
-
-          {comparedKids.map((kid) => {
-            const birthDate = new Date(kid.birthDate);
-            const ageMinutes = getAgeInMinutes(birthDate);
-            const percent = getPercentOfLife(preset.minutes, ageMinutes);
-            const adultEquiv = getAdultEquivalent(preset.minutes, ageMinutes, adultAge);
-
-            return (
-              <View
-                key={kid.id}
-                style={[
-                  styles.compareCard,
-                  { backgroundColor: colors.cardBackground, borderColor: colors.border },
-                ]}
-              >
-                <View style={styles.compareHeader}>
-                  <View style={[styles.compareAvatar, { backgroundColor: kid.color }]}>
-                    <Text style={styles.compareAvatarText}>
-                      {kid.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.compareInfo}>
-                    <Text style={[styles.compareName, { color: colors.text }]}>{kid.name}</Text>
-                    <Text style={[styles.comparePercent, { color: kid.color }]}>
-                      {formatPercent(percent)} of their life
-                    </Text>
-                  </View>
-                </View>
-                <PercentBar percent={percent} color={kid.color} height={10} />
-                <Text style={[styles.compareEquiv, { color: colors.secondaryText }]}>
-                  Feels like <Text style={{ fontWeight: '700', color: colors.accent }}>{adultEquiv.raw}</Text> to a {adultAge}-year-old
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-      )}
-
-      {comparedKids.length === 0 && (
-        <View style={styles.noSelection}>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Comparison</Text>
+      {comparedKids.length === 0 ? (
+        <SurfaceCard>
           <Text style={[styles.noSelectionText, { color: colors.secondaryText }]}>
-            Select at least one child above to compare
+            Select at least one child above.
           </Text>
-        </View>
+        </SurfaceCard>
+      ) : (
+        comparedKids.map((kid) => {
+          const ageMinutes = getAgeInMinutes(new Date(kid.birthDate));
+          const percent = getPercentOfLife(preset.minutes, ageMinutes);
+          const adultEquivalent = getAdultEquivalent(preset.minutes, ageMinutes, adultAge);
+
+          return (
+            <SurfaceCard key={kid.id} style={styles.resultCard}>
+              <View style={styles.compareHeader}>
+                <View style={[styles.compareAvatar, { backgroundColor: kid.color }]}>
+                  <Text style={styles.compareAvatarText}>{kid.name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={styles.compareInfo}>
+                  <Text style={[styles.compareName, { color: colors.text }]}>{kid.name}</Text>
+                  <Text style={[styles.compareMeta, { color: kid.color }]}>
+                    {formatPercent(percent)} of their life
+                  </Text>
+                </View>
+              </View>
+
+              <PercentBar percent={percent} color={kid.color} height={10} />
+
+              <Text style={[styles.compareDescription, { color: colors.secondaryText }]}>
+                For a {adultAge}-year-old, that lands closer to{" "}
+                <Text style={[styles.highlight, { color: colors.accent }]}>
+                  {adultEquivalent.raw}
+                </Text>
+                .
+              </Text>
+            </SurfaceCard>
+          );
+        })
       )}
     </ScrollView>
   );
@@ -213,144 +204,123 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 40,
   },
   centered: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
+    justifyContent: "center",
+    paddingHorizontal: 20,
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+  card: {
+    marginBottom: 20,
   },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "800",
     marginBottom: 8,
   },
-  emptySubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
+  cardBody: {
+    fontSize: 15,
     lineHeight: 24,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "800",
     marginBottom: 10,
-    marginTop: 8,
   },
-  kidSelector: {
-    marginBottom: 16,
+  selector: {
+    marginBottom: 18,
   },
-  kidSelectorContent: {
-    gap: 8,
+  chipRow: {
+    gap: 10,
   },
   kidChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 24,
-    borderWidth: 1,
   },
   kidChipAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 8,
   },
   kidChipAvatarText: {
+    color: "#fff",
     fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
   },
   kidChipName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "700",
   },
-  presetSelector: {
-    marginBottom: 20,
-  },
-  presetSelectorContent: {
-    gap: 8,
-  },
-  presetChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+  eventChip: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    maxWidth: 180,
   },
-  presetChipIcon: {
+  eventIcon: {
     fontSize: 16,
-    marginRight: 6,
+    marginRight: 8,
   },
-  presetChipLabel: {
+  eventLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    maxWidth: 120,
+    fontWeight: "700",
+    flexShrink: 1,
   },
-  resultsSection: {
-    marginTop: 4,
-  },
-  compareCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
+  resultCard: {
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   compareHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
   },
   compareAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 10,
   },
   compareAvatarText: {
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
   },
   compareInfo: {
     flex: 1,
   },
   compareName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "800",
     marginBottom: 2,
   },
-  comparePercent: {
+  compareMeta: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "700",
   },
-  compareEquiv: {
-    fontSize: 14,
-    marginTop: 10,
-    lineHeight: 20,
+  compareDescription: {
+    fontSize: 15,
+    lineHeight: 24,
+    marginTop: 12,
   },
-  noSelection: {
-    padding: 40,
-    alignItems: 'center',
+  highlight: {
+    fontWeight: "800",
   },
   noSelectionText: {
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 22,
   },
 });

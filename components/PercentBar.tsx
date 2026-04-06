@@ -1,5 +1,7 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from "react-native";
+
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
 
 type PercentBarProps = {
   percent: number;
@@ -8,12 +10,23 @@ type PercentBarProps = {
 };
 
 export default function PercentBar({ percent, color, height = 8 }: PercentBarProps) {
-  // Clamp between 0 and 100 for display, but use a minimum width so tiny values are visible
+  const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
   const displayPercent = Math.min(Math.max(percent, 0), 100);
   const barWidth = displayPercent > 0 ? Math.max(displayPercent, 0.5) : 0;
 
   return (
-    <View style={[styles.track, { height, borderRadius: height / 2 }]}>
+    <View
+      style={[
+        styles.track,
+        {
+          height,
+          borderRadius: height / 2,
+          backgroundColor: colors.accentLight,
+          borderColor: colors.border,
+        },
+      ]}
+    >
       <View
         style={[
           styles.fill,
@@ -31,9 +44,9 @@ export default function PercentBar({ percent, color, height = 8 }: PercentBarPro
 
 const styles = StyleSheet.create({
   track: {
-    width: '100%',
-    backgroundColor: 'rgba(128, 128, 128, 0.15)',
-    overflow: 'hidden',
+    width: "100%",
+    borderWidth: 1,
+    overflow: "hidden",
   },
   fill: {
     minWidth: 4,

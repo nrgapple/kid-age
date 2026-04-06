@@ -1,51 +1,49 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getKids, saveKid, deleteKid, getSettings, saveSettings } from '../storage';
-import { Kid, Settings, DEFAULT_SETTINGS } from '../types';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { deleteKid, getKids, getSettings, saveKid, saveSettings } from "../storage";
+import { DEFAULT_SETTINGS, type Kid } from "../types";
 
 // AsyncStorage mock is provided automatically by jest-expo / @react-native-async-storage mock
 
 const makeKid = (overrides: Partial<Kid> = {}): Kid => ({
-  id: 'test-id-1',
-  name: 'Jett',
-  birthDate: '2023-06-15T00:00:00.000Z',
-  color: '#6C63FF',
-  createdAt: '2024-01-01T00:00:00.000Z',
+  id: "test-id-1",
+  name: "Jett",
+  birthDate: "2023-06-15T00:00:00.000Z",
+  color: "#6C63FF",
+  createdAt: "2024-01-01T00:00:00.000Z",
   ...overrides,
 });
 
-describe('storage', () => {
+describe("storage", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
-    // Mark as seeded so getKids() doesn't auto-seed example kids
-    await AsyncStorage.setItem('@kid_age_seeded', 'true');
   });
 
-  describe('getKids', () => {
-    it('returns empty array when no kids stored', async () => {
+  describe("getKids", () => {
+    it("returns empty array when no kids stored", async () => {
       const kids = await getKids();
       expect(kids).toEqual([]);
     });
 
-    it('returns stored kids', async () => {
+    it("returns stored kids", async () => {
       const kid = makeKid();
-      await AsyncStorage.setItem('@kid_age_kids', JSON.stringify([kid]));
+      await AsyncStorage.setItem("@kid_age_kids", JSON.stringify([kid]));
 
       const kids = await getKids();
       expect(kids).toHaveLength(1);
-      expect(kids[0].name).toBe('Jett');
-      expect(kids[0].id).toBe('test-id-1');
+      expect(kids[0].name).toBe("Jett");
+      expect(kids[0].id).toBe("test-id-1");
     });
 
-    it('returns empty array on corrupt data (does not crash)', async () => {
-      await AsyncStorage.setItem('@kid_age_kids', 'not-json!!!');
+    it("returns empty array on corrupt data (does not crash)", async () => {
+      await AsyncStorage.setItem("@kid_age_kids", "not-json!!!");
 
       const kids = await getKids();
       expect(kids).toEqual([]);
     });
   });
 
-  describe('saveKid', () => {
-    it('saves a new kid to empty storage', async () => {
+  describe("saveKid", () => {
+    it("saves a new kid to empty storage", async () => {
       const kid = makeKid();
       await saveKid(kid);
 
@@ -54,174 +52,168 @@ describe('storage', () => {
       expect(kids[0]).toEqual(kid);
     });
 
-    it('appends a second kid without overwriting the first', async () => {
-      const kid1 = makeKid({ id: 'id-1', name: 'Jett' });
-      const kid2 = makeKid({ id: 'id-2', name: 'Luna' });
+    it("appends a second kid without overwriting the first", async () => {
+      const kid1 = makeKid({ id: "id-1", name: "Jett" });
+      const kid2 = makeKid({ id: "id-2", name: "Luna" });
 
       await saveKid(kid1);
       await saveKid(kid2);
 
       const kids = await getKids();
       expect(kids).toHaveLength(2);
-      expect(kids[0].name).toBe('Jett');
-      expect(kids[1].name).toBe('Luna');
+      expect(kids[0].name).toBe("Jett");
+      expect(kids[1].name).toBe("Luna");
     });
 
-    it('updates an existing kid if the id matches', async () => {
-      const kid = makeKid({ id: 'id-1', name: 'Jett' });
+    it("updates an existing kid if the id matches", async () => {
+      const kid = makeKid({ id: "id-1", name: "Jett" });
       await saveKid(kid);
 
-      const updated = { ...kid, name: 'Jett Updated' };
+      const updated = { ...kid, name: "Jett Updated" };
       await saveKid(updated);
 
       const kids = await getKids();
       expect(kids).toHaveLength(1);
-      expect(kids[0].name).toBe('Jett Updated');
+      expect(kids[0].name).toBe("Jett Updated");
     });
 
-    it('persists all kid fields correctly', async () => {
+    it("persists all kid fields correctly", async () => {
       const kid = makeKid({
-        id: 'unique-123',
-        name: 'Test Child',
-        birthDate: '2022-03-10T12:00:00.000Z',
-        color: '#FF6B6B',
-        createdAt: '2024-06-01T08:30:00.000Z',
+        id: "unique-123",
+        name: "Test Child",
+        birthDate: "2022-03-10T12:00:00.000Z",
+        color: "#FF6B6B",
+        createdAt: "2024-06-01T08:30:00.000Z",
       });
 
       await saveKid(kid);
       const kids = await getKids();
 
-      expect(kids[0].id).toBe('unique-123');
-      expect(kids[0].name).toBe('Test Child');
-      expect(kids[0].birthDate).toBe('2022-03-10T12:00:00.000Z');
-      expect(kids[0].color).toBe('#FF6B6B');
-      expect(kids[0].createdAt).toBe('2024-06-01T08:30:00.000Z');
+      expect(kids[0].id).toBe("unique-123");
+      expect(kids[0].name).toBe("Test Child");
+      expect(kids[0].birthDate).toBe("2022-03-10T12:00:00.000Z");
+      expect(kids[0].color).toBe("#FF6B6B");
+      expect(kids[0].createdAt).toBe("2024-06-01T08:30:00.000Z");
     });
   });
 
-  describe('deleteKid', () => {
-    it('removes a kid by id', async () => {
-      const kid1 = makeKid({ id: 'id-1', name: 'Jett' });
-      const kid2 = makeKid({ id: 'id-2', name: 'Luna' });
+  describe("deleteKid", () => {
+    it("removes a kid by id", async () => {
+      const kid1 = makeKid({ id: "id-1", name: "Jett" });
+      const kid2 = makeKid({ id: "id-2", name: "Luna" });
 
       await saveKid(kid1);
       await saveKid(kid2);
 
-      await deleteKid('id-1');
+      await deleteKid("id-1");
 
       const kids = await getKids();
       expect(kids).toHaveLength(1);
-      expect(kids[0].name).toBe('Luna');
+      expect(kids[0].name).toBe("Luna");
     });
 
-    it('does nothing when deleting a non-existent id', async () => {
-      const kid = makeKid({ id: 'id-1' });
+    it("does nothing when deleting a non-existent id", async () => {
+      const kid = makeKid({ id: "id-1" });
       await saveKid(kid);
 
-      await deleteKid('non-existent-id');
+      await deleteKid("non-existent-id");
 
       const kids = await getKids();
       expect(kids).toHaveLength(1);
     });
 
-    it('can delete the only kid, leaving empty storage', async () => {
-      const kid = makeKid({ id: 'only-kid' });
+    it("can delete the only kid, leaving empty storage", async () => {
+      const kid = makeKid({ id: "only-kid" });
       await saveKid(kid);
 
-      await deleteKid('only-kid');
+      await deleteKid("only-kid");
 
       const kids = await getKids();
       expect(kids).toEqual([]);
     });
 
-    it('can delete all kids one by one', async () => {
-      await saveKid(makeKid({ id: 'a', name: 'A' }));
-      await saveKid(makeKid({ id: 'b', name: 'B' }));
-      await saveKid(makeKid({ id: 'c', name: 'C' }));
+    it("can delete all kids one by one", async () => {
+      await saveKid(makeKid({ id: "a", name: "A" }));
+      await saveKid(makeKid({ id: "b", name: "B" }));
+      await saveKid(makeKid({ id: "c", name: "C" }));
 
-      await deleteKid('b');
+      await deleteKid("b");
       let kids = await getKids();
       expect(kids).toHaveLength(2);
-      expect(kids.map((k) => k.name)).toEqual(['A', 'C']);
+      expect(kids.map((k) => k.name)).toEqual(["A", "C"]);
 
-      await deleteKid('a');
+      await deleteKid("a");
       kids = await getKids();
       expect(kids).toHaveLength(1);
-      expect(kids[0].name).toBe('C');
+      expect(kids[0].name).toBe("C");
 
-      await deleteKid('c');
+      await deleteKid("c");
       kids = await getKids();
       expect(kids).toEqual([]);
     });
   });
 
-  describe('full add-then-delete workflow', () => {
-    it('add a kid, verify it exists, delete it, verify it is gone', async () => {
+  describe("full add-then-delete workflow", () => {
+    it("add a kid, verify it exists, delete it, verify it is gone", async () => {
       // Start empty
       let kids = await getKids();
       expect(kids).toHaveLength(0);
 
       // Add
-      const kid = makeKid({ id: 'workflow-test', name: 'Jett' });
+      const kid = makeKid({ id: "workflow-test", name: "Jett" });
       await saveKid(kid);
 
       kids = await getKids();
       expect(kids).toHaveLength(1);
-      expect(kids[0].name).toBe('Jett');
+      expect(kids[0].name).toBe("Jett");
 
       // Delete
-      await deleteKid('workflow-test');
+      await deleteKid("workflow-test");
 
       kids = await getKids();
       expect(kids).toHaveLength(0);
     });
   });
 
-  describe('getSettings', () => {
-    it('returns default settings when nothing is stored', async () => {
+  describe("getSettings", () => {
+    it("returns default settings when nothing is stored", async () => {
       const settings = await getSettings();
       expect(settings).toEqual(DEFAULT_SETTINGS);
       expect(settings.adultAge).toBe(30);
     });
 
-    it('returns stored settings', async () => {
-      await AsyncStorage.setItem(
-        '@kid_age_settings',
-        JSON.stringify({ adultAge: 40 })
-      );
+    it("returns stored settings", async () => {
+      await AsyncStorage.setItem("@kid_age_settings", JSON.stringify({ adultAge: 40 }));
 
       const settings = await getSettings();
       expect(settings.adultAge).toBe(40);
     });
 
-    it('merges partial stored settings with defaults', async () => {
+    it("merges partial stored settings with defaults", async () => {
       // If stored settings are missing a field, defaults should fill in
-      await AsyncStorage.setItem(
-        '@kid_age_settings',
-        JSON.stringify({})
-      );
+      await AsyncStorage.setItem("@kid_age_settings", JSON.stringify({}));
 
       const settings = await getSettings();
       expect(settings.adultAge).toBe(DEFAULT_SETTINGS.adultAge);
     });
 
-    it('returns default settings on corrupt data (does not crash)', async () => {
-      await AsyncStorage.setItem('@kid_age_settings', 'not-json!!!');
+    it("returns default settings on corrupt data (does not crash)", async () => {
+      await AsyncStorage.setItem("@kid_age_settings", "not-json!!!");
 
       const settings = await getSettings();
       expect(settings).toEqual(DEFAULT_SETTINGS);
     });
   });
 
-  describe('saveSettings', () => {
-    it('saves settings and retrieves them', async () => {
+  describe("saveSettings", () => {
+    it("saves settings and retrieves them", async () => {
       await saveSettings({ adultAge: 45 });
 
       const settings = await getSettings();
       expect(settings.adultAge).toBe(45);
     });
 
-    it('overwrites previous settings', async () => {
+    it("overwrites previous settings", async () => {
       await saveSettings({ adultAge: 25 });
       await saveSettings({ adultAge: 50 });
 
@@ -229,14 +221,14 @@ describe('storage', () => {
       expect(settings.adultAge).toBe(50);
     });
 
-    it('does not affect kids storage', async () => {
+    it("does not affect kids storage", async () => {
       const kid = makeKid();
       await saveKid(kid);
       await saveSettings({ adultAge: 35 });
 
       const kids = await getKids();
       expect(kids).toHaveLength(1);
-      expect(kids[0].name).toBe('Jett');
+      expect(kids[0].name).toBe("Jett");
 
       const settings = await getSettings();
       expect(settings.adultAge).toBe(35);

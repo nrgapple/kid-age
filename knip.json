@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "app.config.js",
+    "app/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "constants/**/*.ts",
+    "jest.setup.js",
+    "lib/**/*.{ts,tsx}",
+    "tests/**/*.{ts,tsx}",
+    "workbox-config.js"
+  ],
+  "ignore": ["components/useColorScheme.web.ts", "lib/confirm.ts"],
+  "ignoreDependencies": [
+    "@testing-library/jest-native",
+    "expo-system-ui",
+    "expo-updates",
+    "react-test-renderer"
+  ],
+  "ignoreBinaries": ["maestro"],
+  "ignoreUnresolved": ["expo-router/entry", "expo-updates", "expo-system-ui"]
+}

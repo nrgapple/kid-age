@@ -1,79 +1,53 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  StyleSheet,
-  FlatList,
-  Pressable,
-  Text,
-  View,
-  Platform,
-  RefreshControl,
-  Dimensions,
-} from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  Easing,
-  cancelAnimation,
-} from 'react-native-reanimated';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
-import { Kid } from '@/lib/types';
-import { getKids, deleteKid } from '@/lib/storage';
-import { confirmAction } from '@/lib/confirm';
-import KidCard from '@/components/KidCard';
-import DailyInsightCard from '@/components/DailyInsightCard';
-import { lightHaptic } from '@/lib/haptics';
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const ONBOARDING_CARDS = [
+import DailyInsightCard from "@/components/DailyInsightCard";
+import EmptyState from "@/components/EmptyState";
+import KidCard from "@/components/KidCard";
+import PageHeader from "@/components/PageHeader";
+import SurfaceCard from "@/components/SurfaceCard";
+import { useColorScheme } from "@/components/useColorScheme";
+import Colors from "@/constants/Colors";
+import { lightHaptic } from "@/lib/haptics";
+import { confirmAction } from "@/lib/platform";
+import { deleteKid, getKids } from "@/lib/storage";
+import type { Kid } from "@/lib/types";
+
+const PERSPECTIVE_NOTES = [
   {
-    icon: '⏰',
-    title: 'Did you know?',
-    body: 'A 30-minute timeout feels like 3 full days to a 1-year-old.',
-    color: '#6C63FF',
+    title: "Small waits hit hard",
+    body: "A short delay can still land like a major interruption when you have only been alive for a few years.",
   },
   {
-    icon: '✈️',
-    title: 'Think about it...',
-    body: 'A 2-hour flight is just a blink for you, but for your toddler it feels like an entire work week.',
-    color: '#FF6B6B',
+    title: "Routine scales differently",
+    body: "Daily transitions feel larger because they occupy a bigger share of a child’s lived experience.",
   },
   {
-    icon: '☀️',
-    title: 'Remember summers?',
-    body: 'When you were 5, summer break was 5% of your entire life. No wonder it felt endless!',
-    color: '#4ECDC4',
+    title: "Trips and breaks expand",
+    body: "Travel days, weekends, and school breaks feel stretched because they take up a larger fraction of life.",
   },
 ];
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Only import GestureHandlerRootView on native
-let GestureHandlerRootView: any = null;
-if (Platform.OS !== 'web') {
-  GestureHandlerRootView = require('react-native-gesture-handler').GestureHandlerRootView;
-}
-
 export default function HomeScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
+
   const [kids, setKids] = useState<Kid[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadKids = useCallback(async () => {
-    const loaded = await getKids();
-    setKids(loaded);
+    const loadedKids = await getKids();
+    setKids(loadedKids);
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       loadKids();
-    }, [loadKids])
+    }, [loadKids]),
   );
 
   const onRefresh = useCallback(async () => {
@@ -84,135 +58,78 @@ export default function HomeScreen() {
 
   const handleDelete = useCallback(
     (kid: Kid) => {
-      confirmAction(
-        'Remove Child',
-        `Are you sure you want to remove ${kid.name}?`,
-        async () => {
+      confirmAction({
+        title: "Remove child",
+        message: `Remove ${kid.name} from this device? This does not sync anywhere else.`,
+        confirmText: "Remove",
+        destructive: true,
+        onConfirm: async () => {
           await deleteKid(kid.id);
           await loadKids();
-        }
-      );
+        },
+      });
     },
-    [loadKids]
+    [loadKids],
   );
-
-  const [onboardingIndex, setOnboardingIndex] = useState(0);
 
   const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={[styles.onboardingHeading, { color: colors.text }]}>
-        Time Through Their Eyes
-      </Text>
-
-      {/* Carousel */}
-      <FlatList
-        data={ONBOARDING_CARDS}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => String(i)}
-        onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 64));
-          setOnboardingIndex(idx);
-        }}
-        contentContainerStyle={styles.carouselContent}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.onboardingCard,
-              {
-                backgroundColor: item.color + '15',
-                borderColor: item.color + '40',
-                width: SCREEN_WIDTH - 96,
-              },
-            ]}
-          >
-            <Text style={styles.onboardingCardIcon}>{item.icon}</Text>
-            <Text style={[styles.onboardingCardTitle, { color: colors.text }]}>
-              {item.title}
-            </Text>
-            <Text style={[styles.onboardingCardBody, { color: colors.secondaryText }]}>
-              {item.body}
-            </Text>
-          </View>
-        )}
-      />
-
-      {/* Page dots */}
-      <View style={styles.dots}>
-        {ONBOARDING_CARDS.map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.dot,
-              {
-                backgroundColor:
-                  i === onboardingIndex ? colors.accent : colors.border,
-              },
-            ]}
-          />
+    <EmptyState
+      eyebrow="First setup"
+      title="Build a time map for your family"
+      body="Add one child profile to start translating everyday moments into proportions they can actually feel."
+      actionLabel="Add a child"
+      onAction={() => router.push("/kid/add")}
+    >
+      <View style={styles.noteStack}>
+        {PERSPECTIVE_NOTES.map((note, index) => (
+          <SurfaceCard key={note.title} accent={index === 0} style={styles.noteCard}>
+            <Text style={[styles.noteTitle, { color: colors.text }]}>{note.title}</Text>
+            <Text style={[styles.noteBody, { color: colors.secondaryText }]}>{note.body}</Text>
+          </SurfaceCard>
         ))}
       </View>
-
-      <Text style={[styles.emptySubtitle, { color: colors.secondaryText }]}>
-        Add your child to see how time{'\n'}feels from their perspective
-      </Text>
-      <Pressable
-        onPress={() => router.push('/kid/add')}
-        style={[styles.emptyButton, { backgroundColor: colors.accent }]}
-      >
-        <Text style={styles.emptyButtonText}>+ Add Your Child</Text>
-      </Pressable>
-    </View>
+    </EmptyState>
   );
 
-  // Refresh animation
-  const spinValue = useSharedValue(0);
-
-  useEffect(() => {
-    if (refreshing) {
-      spinValue.value = withRepeat(
-        withTiming(1, { duration: 1000, easing: Easing.linear }),
-        -1,
-        false
-      );
-    } else {
-      cancelAnimation(spinValue);
-      spinValue.value = 0;
-    }
-  }, [refreshing, spinValue]);
-
-  const spinStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${spinValue.value * 360}deg` }],
-  }));
-
-  const renderInsightHeader = () => {
+  const renderListHeader = () => {
     if (kids.length === 0) return null;
+
     return (
-      <View style={styles.insightSection}>
-        {refreshing && (
-          <View style={styles.refreshIndicator}>
-            <Animated.Text style={[styles.refreshIcon, spinStyle]}>⏳</Animated.Text>
-            <Text style={[styles.refreshText, { color: colors.secondaryText }]}>
-              Updating perspectives...
-            </Text>
-          </View>
-        )}
-        <Text style={[styles.insightTitle, { color: colors.text }]}>Today's Perspective</Text>
+      <View style={styles.headerBlock}>
+        <PageHeader
+          eyebrow="Daily view"
+          title="Time through their eyes"
+          subtitle="A quick read on how ordinary moments scale for the children you track here."
+        />
+
+        <SurfaceCard accent style={styles.editorialCard}>
+          <Text style={[styles.editorialEyebrow, { color: colors.accent }]}>
+            Perspective journal
+          </Text>
+          <Text style={[styles.editorialBody, { color: colors.text }]}>
+            These cards are strongest when you treat them as conversation starters, not exact
+            science. They help you recalibrate patience around waiting, travel, routines, and
+            change.
+          </Text>
+        </SurfaceCard>
+
+        <Text style={[styles.sectionLabel, { color: colors.text }]}>Today&apos;s perspective</Text>
         {kids.map((kid) => (
-          <DailyInsightCard
-            key={kid.id}
-            kid={kid}
-            onPress={() => router.push(`/kid/${kid.id}`)}
-          />
+          <DailyInsightCard key={kid.id} kid={kid} onPress={() => router.push(`/kid/${kid.id}`)} />
         ))}
-        <Text style={[styles.kidListTitle, { color: colors.text }]}>My Kids</Text>
+
+        <View style={styles.rowHeader}>
+          <Text style={[styles.sectionLabel, { color: colors.text }]}>Profiles</Text>
+          <Text style={[styles.sectionHint, { color: colors.secondaryText }]}>
+            Swipe on mobile or use the inline remove button on web
+          </Text>
+        </View>
       </View>
     );
   };
 
-  const listContent = (
-    <>
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={kids}
         keyExtractor={(item) => item.id}
@@ -223,11 +140,8 @@ export default function HomeScreen() {
             onDelete={() => handleDelete(item)}
           />
         )}
-        contentContainerStyle={[
-          styles.list,
-          kids.length === 0 && styles.listEmpty,
-        ]}
-        ListHeaderComponent={renderInsightHeader}
+        contentContainerStyle={[styles.list, kids.length === 0 && styles.listEmpty]}
+        ListHeaderComponent={renderListHeader}
         ListEmptyComponent={renderEmpty}
         refreshControl={
           <RefreshControl
@@ -236,45 +150,32 @@ export default function HomeScreen() {
             tintColor={colors.accent}
             colors={[colors.accent]}
             progressBackgroundColor={colors.cardBackground}
-            title="Updating perspectives..."
+            title="Refreshing"
             titleColor={colors.secondaryText}
           />
         }
         showsVerticalScrollIndicator={false}
       />
 
-      {kids.length > 0 && (
+      {kids.length > 0 ? (
         <Pressable
-          onPress={() => { lightHaptic(); router.push('/kid/add'); }}
+          onPress={() => {
+            lightHaptic();
+            router.push("/kid/add");
+          }}
           style={({ pressed }) => [
             styles.fab,
             {
               backgroundColor: colors.accent,
-              bottom: 20 + insets.bottom,
-              opacity: pressed ? 0.85 : 1,
-              transform: [{ scale: pressed ? 0.95 : 1 }],
+              bottom: insets.bottom + 18,
+              opacity: pressed ? 0.88 : 1,
+              transform: [{ scale: pressed ? 0.97 : 1 }],
             },
           ]}
         >
-          <Text style={styles.fabText}>+</Text>
+          <Text style={styles.fabText}>New</Text>
         </Pressable>
-      )}
-    </>
-  );
-
-  // On native, wrap in GestureHandlerRootView for swipe gestures
-  if (Platform.OS !== 'web' && GestureHandlerRootView) {
-    return (
-      <GestureHandlerRootView style={[styles.container, { backgroundColor: colors.background }]}>
-        {listContent}
-      </GestureHandlerRootView>
-    );
-  }
-
-  // On web, no gesture handler needed
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {listContent}
+      ) : null}
     </View>
   );
 }
@@ -284,122 +185,83 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {
-    padding: 16,
-    paddingBottom: 100,
+    padding: 20,
+    paddingBottom: 104,
   },
   listEmpty: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  headerBlock: {
+    marginBottom: 12,
+  },
+  editorialCard: {
+    marginBottom: 22,
+  },
+  editorialEyebrow: {
+    fontFamily: "SpaceMono",
+    fontSize: 11,
+    letterSpacing: 1,
+    marginBottom: 8,
+    textTransform: "uppercase",
+  },
+  editorialBody: {
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  sectionLabel: {
+    fontSize: 20,
+    fontWeight: "800",
+    marginBottom: 12,
+  },
+  sectionHint: {
     flex: 1,
-    justifyContent: 'center',
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "right",
+    marginLeft: 12,
   },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
+  rowHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginTop: 10,
   },
-  onboardingHeading: {
-    fontSize: 26,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  carouselContent: {
+  noteStack: {
+    width: "100%",
+    marginBottom: 18,
     gap: 12,
   },
-  onboardingCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 24,
-    alignItems: 'center',
-    marginHorizontal: 4,
+  noteCard: {
+    width: "100%",
   },
-  onboardingCardIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  onboardingCardTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  onboardingCardBody: {
+  noteTitle: {
     fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
+    fontWeight: "700",
+    marginBottom: 6,
   },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 16,
-    marginBottom: 24,
-    gap: 8,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  emptyButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 28,
-  },
-  emptyButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  refreshIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  refreshIcon: {
-    fontSize: 20,
-  },
-  refreshText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  insightSection: {
-    marginBottom: 8,
-  },
-  insightTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  kidListTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginTop: 4,
-    marginBottom: 12,
+  noteBody: {
+    fontSize: 15,
+    lineHeight: 23,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    height: 54,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 18,
+    elevation: 4,
   },
   fabText: {
-    color: '#fff',
-    fontSize: 30,
-    fontWeight: '400',
-    lineHeight: 32,
+    color: "#fff",
+    fontFamily: "SpaceMono",
+    fontSize: 14,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
   },
 });

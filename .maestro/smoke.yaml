@@ -1,0 +1,6 @@
+appId: ${APP_ID}
+---
+- launchApp
+- assertVisible: "Home"
+- assertVisible: "Compare"
+- assertVisible: "Build a time map for your family"

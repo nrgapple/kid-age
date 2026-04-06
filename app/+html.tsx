@@ -1,12 +1,12 @@
-import { ScrollViewStyleReset } from 'expo-router/html';
-import type { PropsWithChildren } from 'react';
+import { ScrollViewStyleReset } from "expo-router/html";
+import type { PropsWithChildren } from "react";
 
 // This file is web-only and used to configure the root HTML for every
 // web page during static rendering.
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
 export default function Root({ children }: PropsWithChildren) {
-  const basePath = process.env.EXPO_PUBLIC_BASE_URL || '';
+  const basePath = process.env.EXPO_PUBLIC_BASE_URL || "";
 
   return (
     <html lang="en">
@@ -19,7 +19,7 @@ export default function Root({ children }: PropsWithChildren) {
         />
 
         {/* PWA meta tags */}
-        <meta name="theme-color" content="#6C63FF" />
+        <meta name="theme-color" content="#B85C38" />
         <meta name="description" content="See how time feels through your child's eyes." />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
